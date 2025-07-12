@@ -14,8 +14,8 @@ from typing import Dict, List, Tuple, Optional, Any
 from datetime import datetime, timedelta
 import json
 
-from config.settings import settings
-from services.database_service import db_service
+from app.config.settings import settings
+from app.services.database_service import db_service
 
 logger = logging.getLogger(__name__)
 

@@ -1,78 +1,120 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm # OAuth2PasswordBearer removed
-from datetime import datetime, timedelta
-# from pydantic import BaseModel # No longer needed here
+"""
+Authentication routes for Digital Wardrobe System
+"""
+from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 
-from .. import tables as schemas
-from .. import security
-from ..security import get_current_user # Import get_current_user
-from sqlalchemy.orm import Session
-from ..db.database import get_db
-from .. import model as models # Import your SQLAlchemy models
-from sqlalchemy import or_ # Add this import
+from app.models.database_models import User, UserCreate, UserUpdate
+from app.services.auth_service import auth_service, get_current_active_user
 
-# oauth2_scheme moved to security.py
+router = APIRouter()
 
-router = APIRouter(
-    tags=["auth"],
-)
+# Request/Response models
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
-# Token model is now in schemas.py
-# get_current_user moved to security.py
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    expires_in: int
+    user: dict
 
+class RegisterResponse(BaseModel):
+    message: str
+    user_id: str
 
-@router.post("/register", response_model=schemas.Token)  # Changed response_model
-async def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user_by_username = db.query(models.User).filter(models.User.username == user.username).first()
-    if db_user_by_username:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    db_user_by_email = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_user_by_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    email: str
+    first_name: str = None
+    last_name: str = None
 
-    hashed_password = security.get_password_hash(user.password)
-    db_user = models.User(
-        username=user.username,
-        email=user.email,
-        hashed_password=hashed_password,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-
-    # Generate token for the new user
-    access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(
-        data={"sub": db_user.username}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
-@router.post("/login", response_model=schemas.Token)
-async def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)): # Changed signature
-    user_in_db = db.query(models.User).filter(
-        or_(
-            models.User.username == user_credentials.emailOrUsername,
-            models.User.email == user_credentials.emailOrUsername
+@router.post("/register", response_model=RegisterResponse)
+async def register(user_data: UserCreate):
+    """Register a new user"""
+    try:
+        user_id = auth_service.register_user(user_data)
+        return RegisterResponse(
+            message="User registered successfully",
+            user_id=user_id
         )
-    ).first()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Registration failed"
+        )
 
-    if not user_in_db:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username, email, or password")
+@router.post("/login", response_model=LoginResponse)
+async def login(login_data: LoginRequest):
+    """Login user and return access token"""
+    try:
+        result = auth_service.login_user(login_data.username, login_data.password)
+        return LoginResponse(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login failed"
+        )
 
-    if not security.verify_password(user_credentials.password, user_in_db.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username, email, or password")
+@router.post("/token", response_model=LoginResponse)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """OAuth2 compatible token endpoint"""
+    try:
+        result = auth_service.login_user(form_data.username, form_data.password)
+        return LoginResponse(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login failed"
+        )
 
-    access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(
-        data={"sub": user_in_db.username}, expires_delta=access_token_expires # Use username for token subject
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(current_user: User = Depends(get_current_active_user)):
+    """Get current user information"""
+    return UserResponse(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name
     )
-    return {"access_token": access_token, "token_type": "bearer"}
 
+@router.put("/me", response_model=UserResponse)
+async def update_current_user(
+    user_update: UserUpdate,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update current user information"""
+    from app.services.database_service import db_service
 
-@router.get("/users/me", response_model=schemas.User)
-async def read_users_me(current_user: schemas.User = Depends(get_current_user)):
-    # current_user is now an instance of schemas.User as returned by get_current_user in security.py
-    return current_user
+    success = db_service.update_user(current_user.id, user_update)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user"
+        )
+
+    # Get updated user
+    updated_user = db_service.get_user_by_id(current_user.id)
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    return UserResponse(
+        id=updated_user.id,
+        username=updated_user.username,
+        email=updated_user.email,
+        first_name=updated_user.first_name,
+        last_name=updated_user.last_name
+    )

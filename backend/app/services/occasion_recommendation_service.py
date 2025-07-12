@@ -7,10 +7,10 @@ from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, time
 from dataclasses import dataclass
 
-from models.database_models import ClothingItemResponse, User
-from services.database_service import db_service
-from services.outfit_matching_service import outfit_matching_service
-from services.weather_service import weather_service
+from app.models.database_models import ClothingItemResponse, User
+from app.services.database_service import db_service
+from app.services.outfit_matching_service import outfit_matching_service
+from app.services.weather_service import weather_service
 
 logger = logging.getLogger(__name__)
 

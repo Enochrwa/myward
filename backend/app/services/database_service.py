@@ -8,8 +8,8 @@ import logging
 import json
 from datetime import datetime, date
 
-from config.database import get_db_connection
-from models.database_models import *
+from app.config.database import get_db_connection
+from app.models.database_models import *
 
 logger = logging.getLogger(__name__)
 

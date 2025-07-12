@@ -7,14 +7,14 @@ from typing import List, Optional
 from pydantic import BaseModel
 import logging
 
-from models.database_models import (
+from app.models.database_models import (
     User, ClothingItemResponse, ClothingItemCreate, 
     ClothingImageCreate, ClothingFeaturesCreate
 )
-from services.auth_service import get_current_active_user
-from services.database_service import db_service
-from services.image_processing_service import image_processing_service
-from config.settings import settings
+from app.services.auth_service import get_current_active_user
+from app.services.database_service import db_service
+from app.services.image_processing_service import image_processing_service
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

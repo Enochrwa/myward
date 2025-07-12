@@ -9,9 +9,9 @@ import logging
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from config.settings import settings
-from models.database_models import User, UserCreate
-from .database_service import db_service
+from app.config.settings import settings
+from app.models.database_models import User, UserCreate
+from app.services.database_service import db_service
 
 logger = logging.getLogger(__name__)
 

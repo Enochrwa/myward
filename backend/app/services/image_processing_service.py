@@ -18,10 +18,10 @@ from typing import Dict, List, Tuple, Optional, Any
 import json
 from datetime import datetime
 
-from config.settings import settings
-from models.database_models import ClothingItemCreate, ClothingImageCreate, ClothingFeaturesCreate
-from utils.color_utils import rgb_to_hex, get_color_name, get_tone, get_temperature, get_saturation
-from .database_service import db_service
+from app.config.settings import settings
+from app.models.database_models import ClothingItemCreate, ClothingImageCreate, ClothingFeaturesCreate
+from app.utils.color_utils import rgb_to_hex, get_color_name, get_tone, get_temperature, get_saturation
+from app.services.database_service import db_service
 
 logger = logging.getLogger(__name__)
 
