@@ -1,0 +1,12 @@
+# render.yaml
+services:
+  - type: web
+    name: wardrobe-backend     # must match your service name in Render
+    env: python
+    region: oregon             # or whatever region your service uses
+    plan: free                 # or your paid plan
+    pythonVersion: 3.11.9      # pin to the exact patch release you want
+    buildCommand: |
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
