@@ -8,8 +8,8 @@ import logging
 
 from models.database_models import User
 from services.auth_service import get_current_user
-from services.outfit_matching_service import outfit_matching_service
-from services.weather_service import weather_service
+from services_legacy.outfit_matching_service import outfit_matching_service
+from services_legacy.weather_service import weather_service
 from services.occasion_recommendation_service import occasion_recommendation_service
 from services.preference_learning_service import preference_learning_service
 

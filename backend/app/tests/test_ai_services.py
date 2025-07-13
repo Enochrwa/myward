@@ -9,7 +9,7 @@ from datetime import datetime # For mock_current_user
 # Adjust import path as per your project structure
 # Assuming the tests directory is at backend/app/tests/
 # and services are in backend/app/services/
-from ..services.ai_services import analyze_outfit_image_service, get_fashion_trends_service
+from ..services_legacy.ai_services import analyze_outfit_image_service, get_fashion_trends_service
 from ..tables import OutfitAnalysisResponse, TrendForecastResponse, User as UserSchema # Assuming User schema for context
 
 # Helper to create a dummy image file for testing uploads

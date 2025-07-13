@@ -9,8 +9,8 @@ from dataclasses import dataclass
 
 from models.database_models import ClothingItemResponse, User
 from services.database_service import db_service
-from services.outfit_matching_service import outfit_matching_service
-from services.weather_service import weather_service
+from services_legacy.outfit_matching_service import outfit_matching_service
+from services_legacy.weather_service import weather_service
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,164 @@
 from pydantic import BaseModel, model_validator, Field
 from datetime import datetime, date
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict,Any
 
 # Forward declaration for Outfit used in Occasion
-class Outfit(BaseModel):
-    pass
+
+
+
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+    body_type: Optional[str] = None
+    height: Optional[float] = None
+    weight: Optional[float] = None
+    skin_tone: Optional[str] = None
+    timezone: str = "UTC"
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    body_type: Optional[str]
+    height: Optional[float]
+    weight: Optional[float]
+    skin_tone: Optional[str]
+    timezone: str
+    created_at: datetime
+    updated_at: datetime
+
+
+
+class ClothingCategoryCreate(BaseModel):
+    name: str
+    parent_id: Optional[int] = None
+    deepfashion_category_id: Optional[int] = None
+    level: int = 0
+
+class ClothingCategoryResponse(BaseModel):
+    id: int
+    name: str
+    parent_id: Optional[int]
+    deepfashion_category_id: Optional[int]
+    level: int
+
+class ClothingAttributeCreate(BaseModel):
+    name: str
+    attribute_type: str
+    deepfashion_attribute_id: Optional[int] = None
+    description: Optional[str] = None
+
+class ClothingAttributeResponse(BaseModel):
+    id: int
+    name: str
+    attribute_type: str
+    deepfashion_attribute_id: Optional[int]
+    description: Optional[str]
+
+class WardrobeItemCreate(BaseModel):
+    name: str
+    brand: Optional[str] = None
+    category_id: int
+    subcategory: Optional[str] = None
+    size: Optional[str] = None
+    price: Optional[float] = None
+    currency: str = "USD"
+    material: Optional[str] = None
+    season: Optional[str] = None
+    weather_suitability: Optional[List[str]] = None
+    formality_level: int = 3
+    image_url: Optional[str] = None
+    source: Optional[str] = None
+    purchase_date: Optional[date] = None
+    color: Optional[str] = None
+    notes: Optional[str] = None
+    tags: Optional[List[str]] = None
+    condition: str = "good"
+
+class WardrobeItemResponse(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    brand: Optional[str]
+    category_id: int
+    subcategory: Optional[str]
+    size: Optional[str]
+    price: Optional[float]
+    currency: str
+    material: Optional[str]
+    season: Optional[str]
+    weather_suitability: Optional[List[str]]
+    formality_level: int
+    image_url: Optional[str]
+    source: Optional[str]
+    purchase_date: Optional[date]
+    color: Optional[str]
+    notes: Optional[str]
+    tags: Optional[List[str]]
+    favorite: bool
+    times_worn: int
+    condition: str
+    date_added: datetime
+    last_worn: Optional[datetime]
+    updated_at: datetime
+
+class OutfitCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    season: Optional[str] = None
+    weather_suitability: Optional[List[str]] = None
+    formality_level: int = 3
+    occasion_type: Optional[str] = None
+    item_ids: List[int]
+    attribute_ids: Optional[List[int]] = None
+    tags: Optional[List[str]] = None
+    is_template: bool = False
+
+class OutfitResponse(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    description: Optional[str]
+    season: Optional[str]
+    weather_suitability: Optional[List[str]]
+    formality_level: int
+    occasion_type: Optional[str]
+    style_score: Optional[float]
+    color_harmony_score: Optional[float]
+    image_url: Optional[str]
+    tags: Optional[List[str]]
+    times_worn: int
+    avg_rating: Optional[float]
+    is_template: bool
+    created_at: datetime
+    updated_at: datetime
+
+class WeeklyPlanCreate(BaseModel):
+    name: str
+    start_date: date
+    end_date: date
+    plan_type: str = "general"
+    weather_location: Optional[str] = None
+
+class WeeklyPlanResponse(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    start_date: date
+    end_date: date
+    plan_type: str
+    weather_location: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+class WeeklyPlanDayOutfitCreate(BaseModel):
+    day_of_week: str
+    date: Optional[date] = None
+    outfit_id: Optional[int] = None
+    weather_forecast: Optional[Dict[str, Any]] = None
+    notes: Optional[str] = None
+
 
 class User(BaseModel):
     id: int
@@ -17,10 +171,7 @@ class User(BaseModel):
     class Config:
         from_attributes = True 
 
-class UserCreate(BaseModel):
-    username: str
-    email: str
-    password: str
+
 
 class Token(BaseModel):
     access_token: str
@@ -67,20 +218,6 @@ class WardrobeItem(BaseModel):
     class Config:
         from_attributes = True
 
-class WardrobeItemCreate(BaseModel):
-    name: str
-    brand: Optional[str] = None
-    category: str
-    size: Optional[str] = None
-    price: Optional[float] = None
-    material: Optional[str] = None
-    season: Optional[str] = None
-    image_url: Optional[str] = None
-    tags: Optional[List[str]] = None
-    color: Optional[str] = None
-    notes: Optional[str] = None
-    favorite: Optional[bool] = False # Default to False
-
 class WardrobeItemUpdate(BaseModel):
     name: Optional[str] = None
     brand: Optional[str] = None
@@ -107,11 +244,7 @@ class Outfit(BaseModel): # Actual definition of Outfit
     class Config:
         from_attributes = True
 
-class OutfitCreate(BaseModel):
-    name: str
-    item_ids: List[int]
-    tags: Optional[List[str]] = None
-    image_url: Optional[str] = None
+
 
 class OutfitUpdate(BaseModel):
     name: Optional[str] = None

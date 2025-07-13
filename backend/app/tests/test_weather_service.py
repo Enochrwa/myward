@@ -5,7 +5,7 @@ import os
 from unittest.mock import AsyncMock, patch, MagicMock # Import MagicMock
 
 # Import the function to test
-from backend.app.services.weather_service import get_weather_data, WEATHER_API_URL
+from backend.app.services_legacy.weather_service import get_weather_data, WEATHER_API_URL
 
 # Fixture for mocking httpx.AsyncClient
 @pytest_asyncio.fixture
