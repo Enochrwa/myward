@@ -82,7 +82,7 @@ const ImageGallery: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
 
-  const API_BASE = 'http://localhost:5000';
+  const API_BASE = 'http://localhost:8000';
 
   const fetchImages = async (batchId?: string) => {
     setLoading(true);
@@ -427,7 +427,7 @@ const ImageGallery: React.FC = () => {
                   >
                     <div className="relative aspect-w-1 aspect-h-1 bg-gray-200">
                       <img
-                        src={image.image_url}
+                        src={`http://127.0.0.1:8000/uploads/${image?.filename}`}
                         alt={image.original_name}
                         className="w-full h-48 object-cover"
                         onError={(e) => {
@@ -732,7 +732,7 @@ const ImageGallery: React.FC = () => {
                   {/* Image */}
                   <div className="space-y-4">
                     <img
-                      src={selectedImage.image_url}
+                      src={`http://127.0.0.1:8000/uploads/${selectedImage?.filename}`}
                       alt={selectedImage.original_name}
                       className="w-full rounded-lg shadow-md"
                       onError={(e) => {

@@ -16,7 +16,17 @@ backend/wardrobe_images
 backend/my_models
 backend/data
 data/
+images/
+img/
+
+backend/images
+backend/img
 img-001/
 img-001.zip
 backend/img-001.zip
 backend/img-001
+backend
+fashion/
+backend/fashion/images
+parsed_deepfashion_train.csv
+backend/parsed_deepfashion_train.csv

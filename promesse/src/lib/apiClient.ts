@@ -33,7 +33,7 @@ const apiClient = async (endpoint: string, options: RequestOptions = {}) => {
     body: headers['Content-Type'] === 'application/json' && body ? JSON.stringify(body) : body,
   };
 
-  const url = `${BASE_URL}/api${endpoint}`;
+  const url = `${BASE_URL}${endpoint}`;
 
   try {
     const res = await fetch(url, config);
@@ -97,7 +97,7 @@ export const addItem = async (
 
   try {
     // Use apiClient helper — DO NOT set Content-Type, FormData will handle it
-    const response = await apiClient("/wardrobe/items/", {
+    const response = await apiClient("/wardrobe/wardrobe-items/", {
       method: "POST",
       body: formData,
     });
@@ -120,7 +120,7 @@ export const updateItem = (itemId: string, itemData: WardrobeItemData, imageFile
   const form = new FormData();
   form.append('item_update', new Blob([JSON.stringify(itemData)], { type: 'application/json' }));
   if (imageFile) form.append('image', imageFile);
-  return apiClient(`/wardrobe/items/${itemId}`, { method: 'PUT', body: form });
+  return apiClient(`/wardrobe/wardrobe-items/${itemId}`, { method: 'PUT', body: form });
 };
 
 // User profile
