@@ -10,21 +10,55 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
-    body_type: Optional[str] = None
-    height: Optional[float] = None
-    weight: Optional[float] = None
-    skin_tone: Optional[str] = None
-    timezone: str = "UTC"
+    fullName: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    height: Optional[str] = None
+    weight: Optional[str] = None
+    bmi: Optional[str] = None
+    bodyType: Optional[str] = None
+    skinTone: Optional[str] = None
+    location: Optional[Dict[str, Any]] = None
+    timezone: Optional[str] = None
+    lifestyle: Optional[str] = None
+    budgetRange: Optional[str] = None
+    stylePreferences: Optional[str] = None
+    colorPreferences: Optional[str] = None
+    favoriteColors: Optional[str] = None
+    avoidColors: Optional[str] = None
+    allergies: Optional[str] = None
+    disabilities: Optional[str] = None
+    weatherPreferences: Optional[List[str]] = None
+    temperatureRange: Optional[List[str]] = None
+    occasionPreferences: Optional[List[str]] = None
 
 class UserResponse(BaseModel):
     id: int
     username: str
     email: str
+    full_name: Optional[str]
+    age: Optional[int]
+    gender: Optional[str]
+    height: Optional[str]
+    weight: Optional[str]
+    bmi: Optional[str]
     body_type: Optional[str]
-    height: Optional[float]
-    weight: Optional[float]
     skin_tone: Optional[str]
-    timezone: str
+    location: Optional[Dict[str, Any]]
+    timezone: Optional[str]
+    lifestyle: Optional[str]
+    budget_range: Optional[str]
+    style_preferences: Optional[str]
+    color_preferences: Optional[str]
+    favorite_colors: Optional[str]
+    avoid_colors: Optional[str]
+    allergies: Optional[str]
+    disabilities: Optional[str]
+    profile_photo: Optional[str]
+    body_photos: Optional[List[str]]
+    weather_preferences: Optional[List[str]]
+    temperature_range: Optional[List[str]]
+    occasion_preferences: Optional[List[str]]
     created_at: datetime
     updated_at: datetime
 
