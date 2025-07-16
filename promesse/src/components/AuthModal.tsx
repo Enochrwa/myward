@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from './ui/dialog';
 import { Button } from './ui/button';
@@ -7,7 +7,20 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Calculator, Upload, X, CloudSun, Calendar, Thermometer } from 'lucide-react';
+import { Calculator, Upload, X, CloudSun, Calendar, Thermometer, MapPin } from 'lucide-react';
+
+// React Leaflet imports
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -20,6 +33,274 @@ interface BMICalculatorProps {
   onClose: () => void;
   onSave: (bmi: number, height: string, weight: string) => void;
 }
+
+interface Location {
+  lat: number;
+  lng: number;
+  address?: string;
+}
+
+const LocationPicker: React.FC<{
+  location: Location | null;
+  onLocationChange: (location: Location) => void;
+}> = ({ location, onLocationChange }) => {
+  const [address, setAddress] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([0, 0]);
+  const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const [watchId, setWatchId] = useState<number | null>(null);
+  const [isTracking, setIsTracking] = useState(false);
+
+  // Custom icon for live location marker
+  const liveLocationIcon = new L.Icon({
+    iconUrl: 'https://cdn0.iconfinder.com/data/icons/small-n-flat/24/678111-map-marker-512.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+  });
+
+  // Get user's current location
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setUserLocation(newLocation);
+          setMapCenter([newLocation.lat, newLocation.lng]);
+          onLocationChange(newLocation);
+          reverseGeocode(newLocation.lat, newLocation.lng);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Default to a known location if geolocation fails
+          const defaultLocation = { lat: 40.7128, lng: -74.0060 }; // New York
+          setMapCenter([defaultLocation.lat, defaultLocation.lng]);
+          onLocationChange(defaultLocation);
+        }
+      );
+    } else {
+      console.error('Geolocation is not supported by this browser.');
+      const defaultLocation = { lat: 40.7128, lng: -74.0060 }; // New York
+      setMapCenter([defaultLocation.lat, defaultLocation.lng]);
+      onLocationChange(defaultLocation);
+    }
+  };
+
+  // Start tracking live location
+  const startLiveTracking = () => {
+    if (navigator.geolocation) {
+      setIsTracking(true);
+      const id = navigator.geolocation.watchPosition(
+        (position) => {
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setUserLocation(newLocation);
+          setMapCenter([newLocation.lat, newLocation.lng]);
+          reverseGeocode(newLocation.lat, newLocation.lng);
+        },
+        (error) => {
+          console.error('Error tracking location:', error);
+          setIsTracking(false);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 10000,
+          timeout: 5000
+        }
+      );
+      setWatchId(id);
+    } else {
+      console.error('Geolocation is not supported by this browser.');
+    }
+  };
+
+  // Stop tracking live location
+  const stopLiveTracking = () => {
+    if (watchId && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchId);
+      setWatchId(null);
+      setIsTracking(false);
+    }
+  };
+
+  // Toggle live tracking
+  const toggleLiveTracking = () => {
+    if (isTracking) {
+      stopLiveTracking();
+    } else {
+      startLiveTracking();
+    }
+  };
+
+  // Reverse geocode coordinates to get address
+  const reverseGeocode = async (lat: number, lng: number) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+      );
+      const data = await response.json();
+      if (data.display_name) {
+        setAddress(data.display_name);
+      }
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Geocode address to get coordinates
+  const geocodeAddress = async () => {
+    if (!address) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`
+      );
+      const data = await response.json();
+      if (data.length > 0) {
+        const newLocation = {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+          address: address
+        };
+        setMapCenter([newLocation.lat, newLocation.lng]);
+        onLocationChange(newLocation);
+      }
+    } catch (error) {
+      console.error('Error geocoding:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Map click handler
+  const MapClickHandler = () => {
+    useMapEvents({
+      click: async (e) => {
+        const newLocation = {
+          lat: e.latlng.lat,
+          lng: e.latlng.lng
+        };
+        onLocationChange(newLocation);
+        await reverseGeocode(newLocation.lat, newLocation.lng);
+      },
+    });
+    return null;
+  };
+
+  useEffect(() => {
+    if (location) {
+      setMapCenter([location.lat, location.lng]);
+      if (location.address) {
+        setAddress(location.address);
+      } else {
+        reverseGeocode(location.lat, location.lng);
+      }
+    } else {
+      getUserLocation();
+    }
+
+    // Clean up watch position on unmount
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Input
+          placeholder="Enter address or place"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          className="bg-gray-700 flex-1"
+        />
+        <Button
+          type="button"
+          onClick={geocodeAddress}
+          disabled={isLoading || !address}
+        >
+          {isLoading ? 'Searching...' : 'Search'}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={getUserLocation}
+          disabled={isLoading}
+        >
+          <MapPin className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant={isTracking ? 'destructive' : 'outline'}
+          onClick={toggleLiveTracking}
+          disabled={isLoading}
+        >
+          {isTracking ? 'Stop Tracking' : 'Live Track'}
+        </Button>
+      </div>
+      
+      <div className="h-64 rounded-md overflow-hidden relative">
+        <MapContainer
+          center={mapCenter}
+          zoom={13}
+          style={{ height: '100%', width: '100%' }}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          <MapClickHandler />
+          {location && (
+            <Marker position={[location.lat, location.lng]}>
+              <Popup>Your selected location</Popup>
+            </Marker>
+          )}
+          {userLocation && (
+            <Marker 
+              position={[userLocation.lat, userLocation.lng]} 
+              icon={liveLocationIcon}
+            >
+              <Popup>
+                {isTracking ? (
+                  <div>
+                    <strong>Your live location</strong>
+                    <p>Lat: {userLocation.lat.toFixed(6)}</p>
+                    <p>Lng: {userLocation.lng.toFixed(6)}</p>
+                  </div>
+                ) : (
+                  <div>
+                    <strong>Your current location</strong>
+                    <p>Lat: {userLocation.lat.toFixed(6)}</p>
+                    <p>Lng: {userLocation.lng.toFixed(6)}</p>
+                  </div>
+                )}
+              </Popup>
+            </Marker>
+          )}
+        </MapContainer>
+      </div>
+      
+      {userLocation && (
+        <div className="text-sm text-gray-400">
+          <p>Latitude: {userLocation.lat.toFixed(6)}</p>
+          <p>Longitude: {userLocation.lng.toFixed(6)}</p>
+          {address && <p>Address: {address}</p>}
+          {isTracking && <p className="text-green-500">Live tracking active</p>}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const BMICalculator: React.FC<BMICalculatorProps> = ({ isOpen, onClose, onSave }) => {
   const [height, setHeight] = useState('');
@@ -148,7 +429,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialVi
   const [bmi, setBmi] = useState('');
   const [bodyType, setBodyType] = useState('');
   const [skinTone, setSkinTone] = useState('');
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState<Location | null>(null);
   const [timezone, setTimezone] = useState('');
   const [lifestyle, setLifestyle] = useState('');
   const [budgetRange, setBudgetRange] = useState('');
@@ -190,7 +471,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialVi
     formData.append('bmi', bmi);
     formData.append('bodyType', bodyType);
     formData.append('skinTone', skinTone);
-    formData.append('location', location);
+    formData.append('location', location ? JSON.stringify(location) : '');
     formData.append('timezone', timezone);
     formData.append('lifestyle', lifestyle);
     formData.append('budgetRange', budgetRange);
@@ -270,7 +551,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialVi
     setBmi('');
     setBodyType('');
     setSkinTone('');
-    setLocation('');
+    setLocation(null);
     setTimezone('');
     setLifestyle('');
     setBudgetRange('');
@@ -600,53 +881,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialVi
                   <CardTitle className="text-lg">Location & Lifestyle</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        placeholder="e.g., New York, NY"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        className="bg-gray-700"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="timezone">Timezone</Label>
-                      <Select value={timezone} onValueChange={setTimezone}>
-                        <SelectTrigger className="bg-gray-700">
-                          <SelectValue placeholder="Select timezone" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="UTC-12">UTC-12</SelectItem>
-                          <SelectItem value="UTC-11">UTC-11</SelectItem>
-                          <SelectItem value="UTC-10">UTC-10</SelectItem>
-                          <SelectItem value="UTC-9">UTC-9</SelectItem>
-                          <SelectItem value="UTC-8">UTC-8</SelectItem>
-                          <SelectItem value="UTC-7">UTC-7</SelectItem>
-                          <SelectItem value="UTC-6">UTC-6</SelectItem>
-                          <SelectItem value="UTC-5">UTC-5</SelectItem>
-                          <SelectItem value="UTC-4">UTC-4</SelectItem>
-                          <SelectItem value="UTC-3">UTC-3</SelectItem>
-                          <SelectItem value="UTC-2">UTC-2</SelectItem>
-                          <SelectItem value="UTC-1">UTC-1</SelectItem>
-                          <SelectItem value="UTC+0">UTC+0</SelectItem>
-                          <SelectItem value="UTC+1">UTC+1</SelectItem>
-                          <SelectItem value="UTC+2">UTC+2</SelectItem>
-                          <SelectItem value="UTC+3">UTC+3</SelectItem>
-                          <SelectItem value="UTC+4">UTC+4</SelectItem>
-                          <SelectItem value="UTC+5">UTC+5</SelectItem>
-                          <SelectItem value="UTC+6">UTC+6</SelectItem>
-                          <SelectItem value="UTC+7">UTC+7</SelectItem>
-                          <SelectItem value="UTC+8">UTC+8</SelectItem>
-                          <SelectItem value="UTC+9">UTC+9</SelectItem>
-                          <SelectItem value="UTC+10">UTC+10</SelectItem>
-                          <SelectItem value="UTC+11">UTC+11</SelectItem>
-                          <SelectItem value="UTC+12">UTC+12</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label>Location (for weather-based recommendations)</Label>
+                    <LocationPicker 
+                      location={location} 
+                      onLocationChange={(loc) => setLocation(loc)} 
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Select value={timezone} onValueChange={setTimezone}>
+                      <SelectTrigger className="bg-gray-700">
+                        <SelectValue placeholder="Select timezone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UTC-12">UTC-12</SelectItem>
+                        <SelectItem value="UTC-11">UTC-11</SelectItem>
+                        <SelectItem value="UTC-10">UTC-10</SelectItem>
+                        <SelectItem value="UTC-9">UTC-9</SelectItem>
+                        <SelectItem value="UTC-8">UTC-8</SelectItem>
+                        <SelectItem value="UTC-7">UTC-7</SelectItem>
+                        <SelectItem value="UTC-6">UTC-6</SelectItem>
+                        <SelectItem value="UTC-5">UTC-5</SelectItem>
+                        <SelectItem value="UTC-4">UTC-4</SelectItem>
+                        <SelectItem value="UTC-3">UTC-3</SelectItem>
+                        <SelectItem value="UTC-2">UTC-2</SelectItem>
+                        <SelectItem value="UTC-1">UTC-1</SelectItem>
+                        <SelectItem value="UTC+0">UTC+0</SelectItem>
+                        <SelectItem value="UTC+1">UTC+1</SelectItem>
+                        <SelectItem value="UTC+2">UTC+2</SelectItem>
+                        <SelectItem value="UTC+3">UTC+3</SelectItem>
+                        <SelectItem value="UTC+4">UTC+4</SelectItem>
+                        <SelectItem value="UTC+5">UTC+5</SelectItem>
+                        <SelectItem value="UTC+6">UTC+6</SelectItem>
+                        <SelectItem value="UTC+7">UTC+7</SelectItem>
+                        <SelectItem value="UTC+8">UTC+8</SelectItem>
+                        <SelectItem value="UTC+9">UTC+9</SelectItem>
+                        <SelectItem value="UTC+10">UTC+10</SelectItem>
+                        <SelectItem value="UTC+11">UTC+11</SelectItem>
+                        <SelectItem value="UTC+12">UTC+12</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label htmlFor="lifestyle">Lifestyle</Label>
