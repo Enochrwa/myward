@@ -74,8 +74,8 @@ class ClothingCategory(Base):
     level = Column(Integer, default=0)  # 0=main, 1=sub, 2=detailed
     
     # Self-referential relationship for hierarchical categories
-    parent = relationship("ClothingCategory", remote_side=[id])
-    children = relationship("ClothingCategory")
+    parent = relationship("ClothingCategory", remote_side=[id], back_populates="children")
+    children = relationship("ClothingCategory", back_populates="parent")
     wardrobe_items = relationship("WardrobeItem", back_populates="category_obj")
 
 

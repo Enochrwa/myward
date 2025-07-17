@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
-    fullName: Optional[str] = None
+    full_name: Optional[str] = None
     age: Optional[int] = None
     gender: Optional[str] = None
     height: Optional[str] = None
