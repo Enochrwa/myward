@@ -1,9 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Star, Heart, Zap, ChevronDown, Award, Users, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+
 import PremiumEffects from './PremiumEffects';
+import { Sparkles, Star, Heart, Zap, ChevronDown, Award, Users, TrendingUp, Palette, Shirt, Camera, Brain, Clock, Lightbulb, ArrowRight, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const EnhancedHeroSection = () => {
   const [currentWord, setCurrentWord] = useState(0);
@@ -110,57 +111,6 @@ const EnhancedHeroSection = () => {
             </Link>
           </div>
 
-          {/* Enhanced Stats - Ultra Responsive */}
-          <div 
-            className={`grid grid-cols-1 sm:grid-cols-3 gap-4 xs:gap-6 sm:gap-8 max-w-xs xs:max-w-sm sm:max-w-4xl mx-auto mb-12 xs:mb-14 sm:mb-16 transition-all duration-1000 ${isVisible ? 'animate-fade-in' : 'opacity-0'}`}
-            style={{ animationDelay: '0.8s' }}
-          >
-            {[
-              { icon: Users, title: '10M+ Users', desc: 'Trusted worldwide', color: 'from-blue-400 to-cyan-400' },
-              { icon: TrendingUp, title: '98% Accuracy', desc: 'AI recommendations', color: 'from-green-400 to-emerald-400' },
-              { icon: Award, title: 'Award Winner', desc: '2024 Innovation Award', color: 'from-teal-400 to-purple-400' }
-            ].map((feature, index) => (
-              <div 
-                key={feature.title}
-                className="bg-white/10 backdrop-blur-md rounded-xl xs:rounded-2xl p-4 xs:p-6 sm:p-8 border border-white/20 hover:bg-white/15 transition-all duration-300 group shadow-xl"
-                style={{ animationDelay: `${0.8 + index * 0.2}s` }}
-              >
-                <div className={`w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 mx-auto mb-3 xs:mb-4 rounded-full bg-gradient-to-r ${feature.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <h3 className="text-lg xs:text-xl sm:text-2xl font-bold text-white mb-1 xs:mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-white/80 font-medium text-xs xs:text-sm">
-                  {feature.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Trust Indicators - Responsive */}
-          <div 
-            className={`flex flex-wrap justify-center items-center gap-3 xs:gap-4 sm:gap-8 mb-12 xs:mb-14 sm:mb-16 opacity-60 transition-all duration-1000 ${isVisible ? 'animate-fade-in' : 'opacity-0'}`}
-            style={{ animationDelay: '1s' }}
-          >
-            <div className="text-white/60 text-xs xs:text-sm font-medium">Featured in:</div>
-            {['TechCrunch', 'Forbes', 'Vogue', 'Wired'].map((brand) => (
-              <div key={brand} className="text-white/80 text-xs xs:text-sm sm:text-lg font-semibold px-2 xs:px-3 sm:px-4 py-1 xs:py-2 border border-white/20 rounded-lg backdrop-blur-sm">
-                {brand}
-              </div>
-            ))}
-          </div>
-
-          {/* Enhanced Scroll Indicator - Responsive */}
-          <div className="absolute bottom-4 xs:bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <div className="flex flex-col items-center space-y-1 xs:space-y-2">
-              <span className="text-white/80 text-2xs xs:text-xs font-medium uppercase tracking-wider">
-                <span className="hidden xs:inline">Discover More</span>
-                <span className="xs:hidden">More</span>
-              </span>
-              <ChevronDown className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 text-white/80" />
-            </div>
-          </div>
         </div>
       </div>
 
@@ -174,4 +124,87 @@ const EnhancedHeroSection = () => {
   );
 };
 
-export default EnhancedHeroSection;
+
+
+
+const QuickActionsSection = () => {
+  const actions = [
+    {
+      icon: Camera,
+      title: "Snap & Style",
+      description: "Take photos of your clothes and get instant outfit suggestions",
+      action: "Try Now",
+      gradient: "from-pink-500 to-rose-500"
+    },
+    {
+      icon: Shirt,
+      title: "Virtual Wardrobe",
+      description: "Organize your entire wardrobe digitally with smart categorization",
+      action: "Explore",
+      gradient: "from-blue-500 to-indigo-500"
+    },
+    {
+      icon: Clock,
+      title: "Quick Outfits",
+      description: "Get ready in seconds with pre-planned outfit combinations",
+      action: "View All",
+      gradient: "from-emerald-500 to-teal-500"
+    }
+  ];
+
+  return (
+    <section className="py-20 bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-indigo-900/95">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            Quick Actions
+          </h2>
+          <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+            Streamline your daily styling routine with these powerful tools
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {actions.map((action, index) => (
+            <div
+              key={index}
+              className="bg-slate-700/50 rounded-2xl p-8 backdrop-blur-sm border border-slate-600/50 hover:bg-slate-700/70 transition-all duration-300 group"
+            >
+              <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${action.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                <action.icon className="w-8 h-8 text-white" />
+              </div>
+              
+              <h3 className="text-xl font-bold text-white mb-3">
+                {action.title}
+              </h3>
+              
+              <p className="text-slate-300 mb-6 leading-relaxed">
+                {action.description}
+              </p>
+
+              <button className="flex items-center text-teal-400 hover:text-teal-300 font-semibold transition-colors group">
+                {action.action}
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+
+const EnhancedWardrobeHomepage = () => {
+  return (
+    <div className="min-h-screen">
+      <EnhancedHeroSection />
+      {/* <AIFeaturesSection /> */}
+      <QuickActionsSection />
+      {/* <StyleStatsSection /> */}
+      {/* <CallToActionSection /> */}
+    </div>
+  );
+};
+
+export default EnhancedWardrobeHomepage

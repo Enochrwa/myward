@@ -36,7 +36,7 @@ async def register(
     bmi: Optional[str] = Form(None),
     bodyType: Optional[str] = Form(None),
     skinTone: Optional[str] = Form(None),
-    location: Optional[str] = Form(None),
+    location: Optional[str] = Form(None), # Keep as string from form
     timezone: Optional[str] = Form(None),
     lifestyle: Optional[str] = Form(None),
     budgetRange: Optional[str] = Form(None),
@@ -46,14 +46,13 @@ async def register(
     avoidColors: Optional[str] = Form(None),
     allergies: Optional[str] = Form(None),
     disabilities: Optional[str] = Form(None),
-    weatherPreferences: Optional[str] = Form(None),
-    temperatureRange: Optional[str] = Form(None),
-    occasionPreferences: Optional[str] = Form(None),
+    weatherPreferences: Optional[str] = Form(None), # Keep as string from form
+    temperatureRange: Optional[str] = Form(None), # Keep as string from form
+    occasionPreferences: Optional[str] = Form(None), # Keep as string from form
     profilePhoto: Optional[UploadFile] = File(None),
     bodyPhotos: List[UploadFile] = File([]),
-    autoExtractFeatures: bool = Form(False),  # New parameter for auto-extraction
+    autoExtractFeatures: bool = Form(False),
 ):
-    # Existing validation code...
     db_user_by_username = db.query(models.User).filter(models.User.username == username).first()
     if db_user_by_username:
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -63,7 +62,6 @@ async def register(
 
     hashed_password = security.get_password_hash(password)
 
-    # Handle file uploads
     profile_photo_path = None
     full_profile_photo_path = None
     if profilePhoto:
@@ -85,7 +83,6 @@ async def register(
         body_photos_paths.append(f"/uploads/{body_photo_filename}")
         full_body_photos_paths.append(full_body_photo_path)
     
-    # Auto-extract features if requested
     extracted_features = {}
     if autoExtractFeatures and (full_profile_photo_path or full_body_photos_paths):
         photo_service = PhotoProcessingService()
@@ -96,13 +93,11 @@ async def register(
         
         if extraction_results.get("success"):
             extracted_features = extraction_results
-            # Override user inputs with extracted features if available
             if not skinTone and extraction_results.get("skin_tone"):
                 skinTone = extraction_results["skin_tone"]
             if not bodyType and extraction_results.get("body_type"):
                 bodyType = extraction_results["body_type"]
         
-    # Create user with extracted or provided data
     db_user = models.User(
         username=username,
         email=email,
@@ -131,12 +126,9 @@ async def register(
         profile_photo=profile_photo_path,
         body_photos=body_photos_paths,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
+        extraction_metadata=json.dumps(extracted_features) if extracted_features else None
     )
-    
-    # Add extracted features as metadata if available
-    if extracted_features:
-        db_user.extraction_metadata = json.dumps(extracted_features)
     
     db.add(db_user)
     db.commit()
@@ -154,23 +146,23 @@ async def register(
     }
 
 @router.post("/login", response_model=schemas.Token)
-async def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)): # Changed signature
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user_in_db = db.query(models.User).filter(
         or_(
-            models.User.username == user_credentials.emailOrUsername,
-            models.User.email == user_credentials.emailOrUsername
+            models.User.username == form_data.username,
+            models.User.email == form_data.username
         )
     ).first()
 
     if not user_in_db:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username, email, or password")
 
-    if not security.verify_password(user_credentials.password, user_in_db.hashed_password):
+    if not security.verify_password(form_data.password, user_in_db.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username, email, or password")
 
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
-        data={"sub": user_in_db.username}, expires_delta=access_token_expires # Use username for token subject
+        data={"sub": user_in_db.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

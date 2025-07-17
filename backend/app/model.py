@@ -51,6 +51,7 @@ class User(Base):
     occasion_preferences = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    extraction_metadata = Column(JSON, nullable=True)
 
     # Relationships
     wardrobe_items = relationship("WardrobeItem", back_populates="user")

@@ -38,66 +38,6 @@ const OutfitGenerator = () => {
     { id: 'date', label: 'Date Night', icon: '💕', color: 'from-red-500 to-red-600' }
   ];
 
-  const outfitSuggestions = {
-    work: {
-      items: ['Navy Blazer', 'White Silk Blouse', 'Charcoal Trousers', 'Black Leather Loafers'],
-      confidence: 94,
-      sustainability: 'High',
-      weather: 'Perfect for 72°F partly cloudy',
-      image: 'https://images.unsplash.com/photo-1551803091-e20673f05c05?w=300'
-    },
-    casual: {
-      items: ['Denim Jacket', 'Striped T-Shirt', 'Dark Jeans', 'White Sneakers'],
-      confidence: 87,
-      sustainability: 'Medium',
-      weather: 'Great for sunny weather',
-      image: 'https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=300'
-    },
-    formal: {
-      items: ['Black Suit', 'Crisp White Shirt', 'Silk Tie', 'Oxford Shoes'],
-      confidence: 96,
-      sustainability: 'High',
-      weather: 'Indoor event ready',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300'
-    },
-    weekend: {
-      items: ['Cashmere Sweater', 'High-waisted Jeans', 'Ankle Boots', 'Crossbody Bag'],
-      confidence: 91,
-      sustainability: 'High',
-      weather: 'Comfortable for all day',
-      image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=300'
-    },
-    wedding: {
-      items: ['Elegant Midi Dress', 'Pearl Necklace', 'Block Heels', 'Small Clutch'],
-      confidence: 93,
-      sustainability: 'High',
-      weather: 'Perfect for outdoor ceremony',
-      image: 'https://images.unsplash.com/photo-1566479179817-a71bf3ce2e85?w=300'
-    },
-    church: {
-      items: ['Modest Blouse', 'Knee-length Skirt', 'Light Cardigan', 'Low Heels'],
-      confidence: 89,
-      sustainability: 'High',
-      weather: 'Respectful and comfortable',
-      image: 'https://images.unsplash.com/photo-1544966503-7ba37778b4d7?w=300'
-    },
-    home: {
-      items: ['Soft Loungewear', 'Cozy Slippers', 'Hair Scrunchie', 'Warm Socks'],
-      confidence: 95,
-      sustainability: 'Medium',
-      weather: 'Maximum comfort at home',
-      image: 'https://images.unsplash.com/photo-1571513722275-4b41940f54b8?w=300'
-    },
-    date: {
-      items: ['Silk Dress', 'Statement Earrings', 'Heeled Sandals', 'Evening Bag'],
-      confidence: 92,
-      sustainability: 'High',
-      weather: 'Perfect for romantic evening',
-      image: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=300'
-    }
-  };
-
-  // const currentOutfit = outfitSuggestions[selectedOccasion as keyof typeof outfitSuggestions]; // Mock data removed
 
   useEffect(() => {
     if (geoError) {

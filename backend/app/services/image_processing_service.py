@@ -18,10 +18,10 @@ from typing import Dict, List, Tuple, Optional, Any
 import json
 from datetime import datetime
 
-from config.settings import settings
-from models.database_models import ClothingItemCreate, ClothingImageCreate, ClothingFeaturesCreate
-from utils.color_utils import rgb_to_hex, get_color_name, get_tone, get_temperature, get_saturation
-from .database_service import db_service
+# from config.settings import settings
+# from models.database_models import ClothingItemCreate, ClothingImageCreate, ClothingFeaturesCreate
+from ..utils.color_utils import rgb_to_hex, get_color_name, get_tone, get_temperature, get_saturation
+# from .database_service import db_service
 
 logger = logging.getLogger(__name__)
 
@@ -499,7 +499,8 @@ class ImageProcessingService:
     
     def __init__(self):
         self.classifier = ClothingClassifier()
-        self.upload_dir = settings.upload_dir
+        # self.upload_dir = settings.upload_dir
+        self.upload_dir = "uploads"
         os.makedirs(self.upload_dir, exist_ok=True)
     
     def generate_intelligent_filename(self, 

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import json
 from dataclasses import dataclass
 
-from config.settings import settings
+# from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,8 @@ class WeatherService:
     """Service for fetching and processing weather data using OpenWeatherMap API"""
     
     def __init__(self):
-        self.api_key = settings.weather_api_key
+        # self.api_key = settings.weather_api_key
+        self.api_key = "mock_api_key"
         self.base_url = "http://api.openweathermap.org/data/2.5/weather"
         self.forecast_url = "http://api.openweathermap.org/data/2.5/forecast"
         self.geocoding_url = "http://api.openweathermap.org/geo/1.0/direct"

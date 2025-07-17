@@ -10,29 +10,29 @@ const FeaturesSection = () => {
   const features = [
     {
       icon: Search,
-      title: "AI-Powered Cataloging",
-      description: "Instantly organize your wardrobe with intelligent image recognition, automatic tagging, and smart categorization that learns from your style.",
+      title: "Digitize Your Wardrobe",
+      description: "Use our AI-powered tools to easily upload and categorize every item in your closet. It's like having a personal wardrobe assistant.",
       gradient: "from-owis-forest to-owis-sage",
       accent: Sparkles
     },
     {
       icon: Calendar,
-      title: "Smart Outfit Curation",
-      description: "Get personalized outfit recommendations with stunning visual previews based on weather, occasion, and your unique style DNA.",
+      title: "Plan Your Outfits",
+      description: "Our smart calendar helps you plan your outfits for the week, so you'll never have to wonder what to wear again.",
       gradient: "from-owis-purple to-owis-bronze",
       accent: Zap
     },
     {
       icon: User,
-      title: "Style Community",
-      description: "Connect with fashion enthusiasts worldwide through beautifully designed social feeds, interactive challenges, and inspiring style galleries.",
+      title: "Virtual Stylist",
+      description: "Get personalized outfit recommendations based on your existing wardrobe, the weather, and your personal style.",
       gradient: "from-owis-sage to-owis-mint",
       accent: Heart
     },
     {
       icon: Image,
-      title: "Sustainability Insights",
-      description: "Track your fashion footprint with elegant analytics, discover eco-friendly alternatives, and promote circular fashion through beautiful, actionable insights.",
+      title: "Discover New Looks",
+      description: "Explore how to style your clothes in new ways. Our AI shows you how to mix and match items to create fresh looks.",
       gradient: "from-owis-bronze to-owis-purple",
       accent: Star
     }

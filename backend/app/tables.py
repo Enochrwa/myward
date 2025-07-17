@@ -31,6 +31,8 @@ class UserCreate(BaseModel):
     weatherPreferences: Optional[List[str]] = None
     temperatureRange: Optional[List[str]] = None
     occasionPreferences: Optional[List[str]] = None
+    profile_photo: Optional[str] = None
+    body_photos: Optional[List[str]] = None
 
 class UserResponse(BaseModel):
     id: int
@@ -61,7 +63,7 @@ class UserResponse(BaseModel):
     occasion_preferences: Optional[List[str]]
     created_at: datetime
     updated_at: datetime
-
+    extraction_metadata: Optional[Dict[str, Any]] = None
 
 
 class ClothingCategoryCreate(BaseModel):
@@ -226,7 +228,7 @@ class EventDetailsInput(BaseModel):
         from_attributes = True
 
 class UserLogin(BaseModel):
-    emailOrUsername: str
+    username: str
     password: str
 
 class WardrobeItem(BaseModel):

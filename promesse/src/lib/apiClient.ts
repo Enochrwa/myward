@@ -4,7 +4,7 @@ import { PersonalizedWardrobeSuggestions } from '@/types/recommendationTypes';
 import { Feedback, FeedbackCreate } from '@/types/outfitTypes';
 
 // Base URL from environment or fallback
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://localhost:8000/api';
 
 // Helper: get auth token from localStorage
 const getAuthToken = () => localStorage.getItem('token');
@@ -68,60 +68,135 @@ export interface WardrobeItemData {
   favorite?: boolean;
 }
 
-// CRUD for wardrobe items
+// Wardrobe Item Types
+export interface WardrobeItemData {
+    name?: string;
+    brand?: string;
+    category?: string;
+    size?: string;
+    price?: number;
+    material?: string;
+    season?: string;
+    image_url?: string | null;
+    tags?: string[];
+    color?: string;
+    notes?: string;
+    favorite?: boolean;
+    // Fields from the model that might not be in create/update but are in responses
+    id?: number;
+    user_id?: number;
+    times_worn?: number;
+    last_worn?: string;
+    purchase_date?: string;
+    formality_level?: number;
+}
+
+export interface WardrobeItemCreate extends WardrobeItemData {}
+export interface WardrobeItemUpdate extends WardrobeItemData {}
+export interface WardrobeItemResponse extends WardrobeItemData {
+    id: number;
+    user_id: number;
+}
+
+// Category Types
+export interface ClothingCategoryCreate {
+    name: string;
+    description?: string;
+}
+export interface ClothingCategoryResponse extends ClothingCategoryCreate {
+    id: number;
+}
+
+// Attribute Types
+export interface ClothingAttributeCreate {
+    attribute_type: string;
+    value: string;
+}
+export interface ClothingAttributeResponse extends ClothingAttributeCreate {
+    id: number;
+}
 
 
-export const addItem = async (
-  itemData: Omit<WardrobeItemData, 'image_url'>,
-  imageFile?: File
-) => {
-  console.log("[apiClient.addItem] Raw itemData to be stringified:", itemData);
-  const itemDataString = JSON.stringify(itemData);
-  console.log("[apiClient.addItem] Stringified itemData:", itemDataString);
+// Wardrobe API Functions
 
-  const formData = new FormData();
-  formData.append("item", itemDataString); // ✅ FastAPI expects item as string
+// CREATE
+export const createWardrobeItem = (item: WardrobeItemCreate): Promise<WardrobeItemResponse> =>
+    apiClient('/wardrobe/wardrobe-items/', { method: 'POST', body: item });
 
-  if (imageFile) {
-    formData.append("image", imageFile, imageFile.name);
-    console.log("[apiClient.addItem] Appended image file:", imageFile.name, imageFile.type, imageFile.size);
-  } else {
-    console.log("[apiClient.addItem] No image file provided.");
-  }
+// READ ALL
+export const getAllItems = (params: URLSearchParams = new URLSearchParams()): Promise<WardrobeItemResponse[]> =>
+    apiClient(`/wardrobe/wardrobe-items/?${params.toString()}`);
 
-  // To inspect FormData, iterate over entries (won't show file content but will show keys/filenames)
-  // console.log("[apiClient.addItem] FormData entries:");
-  // for (let pair of formData.entries()) {
-  //   console.log(pair[0]+ ', ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
-  // }
+// READ ONE
+export const getItem = (itemId: number): Promise<WardrobeItemResponse> =>
+    apiClient(`/wardrobe/wardrobe-items/${itemId}`);
 
-  try {
-    // Use apiClient helper — DO NOT set Content-Type, FormData will handle it
-    const response = await apiClient("/wardrobe/wardrobe-items/", {
-      method: "POST",
-      body: formData,
-    });
-    console.log("[apiClient.addItem] Success response:", response);
-    return response;
-  } catch (error: any) {
-    console.error("[apiClient.addItem] Error caught in apiClient.addItem:", error);
-    // Log more details if available, e.g., error.response for axios-like errors
-    if (error.response) {
-      console.error("[apiClient.addItem] Error response data:", error.response.data);
-      console.error("[apiClient.addItem] Error response status:", error.response.status);
-    }
-    throw error; // Re-throw the error to be caught by the caller
-  }
+// UPDATE
+export const updateItem = (itemId: number, updateData: WardrobeItemUpdate): Promise<WardrobeItemResponse> =>
+    apiClient(`/wardrobe/wardrobe-items/${itemId}`, { method: 'PUT', body: updateData });
+
+// DELETE
+export const deleteItem = (itemId: number): Promise<{ message: string }> =>
+    apiClient(`/wardrobe/wardrobe-items/${itemId}`, { method: 'DELETE' });
+
+// Toggle Favorite
+export const toggleFavorite = (itemId: number): Promise<{ favorite: boolean }> =>
+    apiClient(`/wardrobe/wardrobe-items/${itemId}/favorite`, { method: 'POST' });
+
+// Mark as Worn
+export const markAsWorn = (itemId: number): Promise<{ times_worn: number; last_worn: string }> =>
+    apiClient(`/wardrobe/wardrobe-items/${itemId}/worn`, { method: 'POST' });
+
+// Upload Image
+export const uploadItemImage = (itemId: number, file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient(`/wardrobe/wardrobe-items/${itemId}/upload-image`, { method: 'POST', body: formData });
+};
+
+// Bulk Delete
+export const bulkDeleteItems = (itemIds: number[]): Promise<{ deleted_count: number }> =>
+    apiClient('/wardrobe/wardrobe-items/bulk-delete', { method: 'DELETE', body: { item_ids: itemIds } });
+
+// Bulk Update
+export const bulkUpdateItems = (itemIds: number[], updates: Partial<WardrobeItemUpdate>): Promise<{ updated_count: number }> =>
+    apiClient('/wardrobe/wardrobe-items/bulk-update', { method: 'POST', body: { item_ids: itemIds, updates } });
+
+
+// Category Routes
+export const createCategory = (category: ClothingCategoryCreate): Promise<ClothingCategoryResponse> =>
+    apiClient('/wardrobe/categories/', { method: 'POST', body: category });
+
+export const getCategories = (skip: number = 0, limit: number = 100): Promise<ClothingCategoryResponse[]> =>
+    apiClient(`/wardrobe/categories/?skip=${skip}&limit=${limit}`);
+
+// Attribute Routes
+export const createAttribute = (attribute: ClothingAttributeCreate): Promise<ClothingAttributeResponse> =>
+    apiClient('/wardrobe/attributes/', { method: 'POST', body: attribute });
+
+export const getAttributes = (type?: string, skip: number = 0, limit: number = 100): Promise<ClothingAttributeResponse[]> => {
+    const params = new URLSearchParams();
+    if (type) params.append('attribute_type', type);
+    params.append('skip', skip.toString());
+    params.append('limit', limit.toString());
+    return apiClient(`/wardrobe/attributes/?${params.toString()}`);
 };
 
 
+// Other Wardrobe-related operations from the Python file
 
-export const updateItem = (itemId: string, itemData: WardrobeItemData, imageFile?: File) => {
-  const form = new FormData();
-  form.append('item_update', new Blob([JSON.stringify(itemData)], { type: 'application/json' }));
-  if (imageFile) form.append('image', imageFile);
-  return apiClient(`/wardrobe/wardrobe-items/${itemId}`, { method: 'PUT', body: form });
-};
+// Create Item Classification
+export const createItemClassification = (itemId: number, classificationData: any): Promise<any> =>
+    apiClient(`/wardrobe/wardrobe-items/${itemId}/classifications`, { method: 'POST', body: classificationData });
+
+// Create Color Analysis
+export const createColorAnalysis = (itemId: number, analysisData: any): Promise<any> =>
+    apiClient(`/wardrobe/wardrobe-items/${itemId}/color-analysis`, { method: 'POST', body: analysisData });
+
+// Export Wardrobe
+export const exportWardrobe = (format: 'json' | 'csv' = 'json'): Promise<any> =>
+    apiClient(`/wardrobe/export/wardrobe?format=${format}`);
+
 
 // User profile
 export const getUserProfile = (): Promise<UserProfile> => apiClient('/profile/me');
