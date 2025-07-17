@@ -4,7 +4,7 @@ import { Menu, X, User, Settings, LogOut, Sparkles, Heart, Calendar, BarChart3, 
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../hooks/useAuth'; // Added useAuth
-import { AuthModal } from './AuthModal'; // Added AuthModal
+import { AuthModal } from './auth'; // Added AuthModal
 import { Button } from './ui/button'; // Added Button
 import {
   NavigationMenu,

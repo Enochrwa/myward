@@ -62,7 +62,7 @@ class User(Base):
     style_history = relationship("StyleHistory", back_populates="user")
     profile = relationship("UserProfile", uselist=False, back_populates="user", cascade="all, delete-orphan")
     style_profile = relationship("UserStyleProfile", uselist=False, back_populates="user", cascade="all, delete-orphan")
-    weather_preferences = relationship("WeatherPreference", back_populates="user")
+    weather_preferences_rel = relationship("WeatherPreference", back_populates="user")
 
 
 class ClothingCategory(Base):
@@ -231,7 +231,7 @@ class WeatherPreference(Base):
     preferred_categories = Column(JSON, nullable=True)  # Preferred clothing categories for this weather
     avoided_categories = Column(JSON, nullable=True)  # Categories to avoid
     
-    user = relationship("User", back_populates="weather_preferences")
+    user = relationship("User", back_populates="weather_preferences_rel")
 
 
 class WeeklyPlan(Base):

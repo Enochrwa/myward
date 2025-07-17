@@ -3,8 +3,18 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
-import pymysql
-from ..model import *
+
+from ..model import  (User,
+ClothingCategory,
+ClothingAttribute,
+ColorAnalysis,
+UserProfile,
+WardrobeItem,WeatherData,
+WeatherPreference,WeeklyPlan,
+Occasion,Outfit,OutfitRecommendation,StyleHistory,UserStyleProfile,ItemClassification,
+Feedback,
+
+WeeklyPlanDayOutfit)
 from .base import Base
 # Load environment variables
 load_dotenv()
@@ -48,7 +58,7 @@ def create_database_engine():
 
     # Import all models before creating tables
     try:
-        from app import models  # make sure models.User, etc., are defined here
+        from app import model  # make sure models.User, etc., are defined here
         Base.metadata.create_all(bind=engine)
         print("✅ All tables created (if not already present)")
     except Exception as e:
