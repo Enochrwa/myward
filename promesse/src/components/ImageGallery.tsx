@@ -82,7 +82,7 @@ const ImageGallery: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
 
-  const API_BASE = 'http://localhost:8000';
+  const API_BASE = 'http://localhost:8000/api';
 
   const fetchImages = async (batchId?: string) => {
     setLoading(true);

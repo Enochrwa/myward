@@ -40,3 +40,5 @@ async def predict_multiple(
         cat = predict_class_from_pil(img)
         results.append({"filename": file.filename, "category": cat})
     return {"predictions": results}
+
+

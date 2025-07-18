@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Shirt, 
@@ -19,16 +19,23 @@ import {
   Palette,
   Sun,
   Cloud,
-  Snowflake
+  Snowflake,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import CategorizedWardrobe from './CategorizedWardrobe';
+import * as apiClient from '@/lib/apiClient';
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [uploading, setUploading] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ total: number; completed: number; failed: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -40,15 +47,55 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      await uploadImages(files);
+    }
+  };
+
+  const uploadImages = async (files: FileList) => {
+    setUploading(true);
+    setBatchProgress({
+      total: files.length,
+      completed: 0,
+      failed: 0
+    });
+
+    const formData = new FormData();
+    Array.from(files).forEach(file => {
+      formData.append('files', file);
+    });
+
+    try {
+      const response = await fetch(`http://localhost:8000/upload-images/`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBatchProgress({
+          total: data.total_images,
+          completed: data.successful_uploads,
+          failed: data.failed_uploads
+        });
+        // Refresh the categorized wardrobe view by re-fetching
+        // This is a simple way to trigger a re-render of the child component
+        // A more robust solution might involve a shared state or context
+        window.location.reload(); 
+      } else {
+        console.error('Batch upload failed:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+    } finally {
+      setUploading(false);
+      setTimeout(() => setBatchProgress(null), 5000);
+    }
+  };
+
   const quickActions = [
-    {
-      title: 'Add New Item',
-      description: 'Upload a new piece to your wardrobe',
-      icon: Plus,
-      href: '/wardrobe?action=add-item',
-      gradient: 'from-emerald-500 to-teal-600',
-      bgGradient: 'from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20'
-    },
     {
       title: 'Create Outfit',
       description: 'Generate AI-powered outfit combinations',
@@ -75,42 +122,6 @@ const Dashboard = () => {
     }
   ];
 
-  const wardrobeStats = [
-    { label: 'Total Items', value: '127', icon: Shirt, color: 'text-purple-600 dark:text-purple-400' },
-    { label: 'Outfits Created', value: '43', icon: Target, color: 'text-blue-600 dark:text-blue-400' },
-    { label: 'Favorites', value: '28', icon: Heart, color: 'text-pink-600 dark:text-pink-400' },
-    { label: 'Weekly Wears', value: '15', icon: Clock, color: 'text-green-600 dark:text-green-400' }
-  ];
-
-  const recentActivity = [
-    { action: 'Added new jacket', time: '2 hours ago', type: 'add' },
-    { action: 'Created summer outfit', time: '5 hours ago', type: 'outfit' },
-    { action: 'Favorited blue dress', time: '1 day ago', type: 'favorite' },
-    { action: 'Planned week outfits', time: '2 days ago', type: 'plan' }
-  ];
-
-  const styleInsights = [
-    { category: 'Most Worn Color', value: 'Navy Blue', percentage: 35, color: 'bg-blue-500' },
-    { category: 'Favorite Style', value: 'Casual Chic', percentage: 62, color: 'bg-purple-500' },
-    { category: 'Season Readiness', value: 'Summer 2024', percentage: 78, color: 'bg-teal-500' },
-    { category: 'Sustainability Score', value: 'Excellent', percentage: 89, color: 'bg-green-500' }
-  ];
-
-  const weatherOutfit = {
-    temperature: '22°C',
-    condition: 'Sunny',
-    icon: Sun,
-    suggestion: 'Light layers recommended',
-    outfit: 'Linen shirt + Cotton pants + Canvas sneakers'
-  };
-
-  const trendingStyles = [
-    { name: 'Cottagecore', popularity: 94, color: 'from-green-400 to-emerald-500' },
-    { name: 'Y2K Revival', popularity: 87, color: 'from-pink-400 to-purple-500' },
-    { name: 'Dark Academia', popularity: 76, color: 'from-purple-400 to-orange-500' },
-    { name: 'Minimalist', popularity: 82, color: 'from-gray-400 to-slate-500' }
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 pt-20 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -134,51 +145,64 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-
-          {/* Weather-Based Outfit Sugge4tion */}
-          <Card className="bg-slate-200 border-blue-200 dark:border-blue-800">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between b">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full flex items-center justify-center">
-                    <weatherOutfit.icon size={24} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                      Today's Weather: {weatherOutfit.temperature} - {weatherOutfit.condition}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">{weatherOutfit.suggestion}</p>
-                  </div>
-                </div>
-                <Button className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700">
-                  <Sparkles size={16} className="mr-2" />
-                  Get Outfit
-                </Button>
-              </div>
-              <div className="mt-4 p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  AI Recommendation: {weatherOutfit.outfit}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Upload and Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Upload Area */}
+          <Card 
+            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-white hover:border-blue-400 transition-colors cursor-pointer"
+            onClick={() => !uploading && fileInputRef.current?.click()}
+          >
+            {uploading ? (
+              <div className="space-y-4">
+                <Loader2 className="w-12 h-12 text-blue-600 mx-auto animate-spin" />
+                <p className="text-lg text-gray-600">
+                  Processing {batchProgress?.completed || 0} of {batchProgress?.total || 0} images
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full"
+                    style={{
+                      width: `${((batchProgress?.completed || 0) / (batchProgress?.total || 1)) * 100}%`
+                    }}
+                  />
+                </div>
+                <p className="text-sm text-gray-500">
+                  {batchProgress?.failed || 0} failed uploads
+                </p>
+              </div>
+            ) : (
+              <>
+                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Upload Your Clothes</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Drop images here or click to browse. They'll be automatically categorized.
+                </p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+              </>
+            )}
+          </Card>
+          
+          {/* Quick Actions simplified */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickActions.map((action, index) => {
               const Icon = action.icon;
               return (
                 <Link key={index} to={action.href}>
-                  <Card className={`hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br ${action.bgGradient} border-0 shadow-lg`}>
-                    <CardContent className="p-6">
+                  <Card className={`h-full hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br ${action.bgGradient} border-0 shadow-lg`}>
+                    <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
                       <div className={`w-12 h-12 bg-gradient-to-br ${action.gradient} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
                         <Icon size={24} className="text-white" />
                       </div>
-                      <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">{action.title}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{action.description}</p>
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-200">{action.title}</h3>
                     </CardContent>
                   </Card>
                 </Link>
@@ -187,158 +211,16 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Wardrobe Stats */}
-            <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-800 dark:text-gray-200">Wardrobe Overview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {wardrobeStats.map((stat, index) => {
-                    const Icon = stat.icon;
-                    return (
-                      <div key={index} className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                        <div className="flex justify-center mb-2">
-                          <Icon size={24} className={stat.color} />
-                        </div>
-                        <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stat.value}</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Style Insights */}
-            <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-800 dark:text-gray-200">Style Insights</CardTitle>
-                <CardDescription>Your fashion patterns and preferences</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 ">
-                  {styleInsights.map((insight, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{insight.category}</span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{insight.value}</span>
-                      </div>
-                      <Progress value={insight.percentage} className="h-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Trending Styles */}
-            <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-800 dark:text-gray-200">Trending Styles</CardTitle>
-                <CardDescription>What's popular in fashion right now</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  {trendingStyles.map((style, index) => (
-                    <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-800 dark:text-gray-200">{style.name}</h4>
-                        <Badge variant="secondary">{style.popularity}%</Badge>
-                      </div>
-                      <div className={`h-2 bg-gradient-to-r ${style.color} rounded-full`} 
-                           style={{ width: `${style.popularity}%` }} />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Recent Activity */}
-            <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-800 dark:text-gray-200">Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                          {activity.action}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Style Goals */}
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-800 dark:text-gray-200 flex items-center">
-                  <Award className="mr-2 text-purple-600 dark:text-purple-400" size={20} />
-                  Style Goals
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sustainable Fashion</span>
-                      <span className="text-xs text-purple-600 dark:text-purple-400">7/10 items</span>
-                    </div>
-                    <Progress value={70} className="h-2" />
-                  </div>
-                  <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Color Coordination</span>
-                      <span className="text-xs text-blue-600 dark:text-blue-400">Complete!</span>
-                    </div>
-                    <Progress value={100} className="h-2" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Community Highlights */}
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-800 dark:text-gray-200 flex items-center">
-                  <Users className="mr-2 text-blue-600 dark:text-blue-400" size={20} />
-                  Community
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Style Challenges</span>
-                    <Badge className="bg-gradient-to-r from-blue-500 to-cyan-600">3 Active</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Following</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">247 stylists</span>
-                  </div>
-                </div>
-                <Button className="w-full mt-4 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700">
-                  <Users size={16} className="mr-2" />
-                  Explore Community
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        {/* Categorized Wardrobe Display */}
+        <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-2xl text-gray-800 dark:text-gray-200">Your Wardrobe</CardTitle>
+            <CardDescription>All your clothes, automatically categorized by AI.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CategorizedWardrobe />
+          </CardContent>
+        </Card>
 
         {/* Call to Action */}
         <div className="mt-12 text-center">
@@ -354,9 +236,11 @@ const Dashboard = () => {
                     <Sparkles size={20} className="mr-2" />
                     Create Outfit
                   </Button>
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                    <Eye size={20} className="mr-2" />
-                    Browse Wardrobe
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" asChild>
+                    <Link to="/wardrobe">
+                      <Eye size={20} className="mr-2" />
+                      Browse Wardrobe
+                    </Link>
                   </Button>
                 </div>
               </div>

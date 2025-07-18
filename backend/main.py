@@ -194,6 +194,7 @@ def init_database():
             opencv_features JSON NOT NULL,
             upload_date DATETIME NOT NULL,
             batch_id VARCHAR(36),
+            category VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_batch_id (batch_id),
             INDEX idx_upload_date (upload_date)
@@ -389,6 +390,10 @@ def process_single_image(file_data, batch_id=None):
         # Get image dimensions
         width, height = get_image_dimensions(filepath)
         
+        # Classify image
+        img = Image.open(filepath).convert("RGB")
+        category = classifier.predict_class_from_pil(img)
+        
         # Extract features
         resnet_features = extract_resnet_features(filepath)
         opencv_features = extract_opencv_features(filepath)
@@ -408,7 +413,8 @@ def process_single_image(file_data, batch_id=None):
             "resnet_features": resnet_features,
             "opencv_features": opencv_features,
             "upload_date": datetime.now().isoformat(),
-            "batch_id": batch_id
+            "batch_id": batch_id,
+            "category": category
         }
         
         return {
@@ -474,8 +480,8 @@ async def upload_single_image(
             insert_query = """
             INSERT INTO images (
                 id, filename, original_name, file_size, image_width, image_height,
-                dominant_color, color_palette, resnet_features, opencv_features, upload_date, batch_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                dominant_color, color_palette, resnet_features, opencv_features, upload_date, batch_id, category
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             
             values = (
@@ -490,7 +496,8 @@ async def upload_single_image(
                 json.dumps(metadata["resnet_features"]),
                 json.dumps(metadata["opencv_features"]),
                 datetime.now(),
-                metadata["batch_id"]
+                metadata["batch_id"],
+                metadata["category"]
             )
             
             cursor.execute(insert_query, values)
@@ -513,7 +520,7 @@ async def upload_single_image(
         return ImageResponse(
             message="Image uploaded and processed successfully",
             image_id=metadata["id"],
-            image_url=f"http://172.0.0.1:8000/uploads/{metadata['filename']}",
+            image_url=f"http://0.0.0.0:8000/uploads/{metadata['filename']}",
             metadata=ImageMetadata(**metadata)
         )
     
@@ -585,8 +592,8 @@ async def upload_multiple_images(
                 insert_query = """
                 INSERT INTO images (
                     id, filename, original_name, file_size, image_width, image_height,
-                    dominant_color, color_palette, resnet_features, opencv_features, upload_date, batch_id
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    dominant_color, color_palette, resnet_features, opencv_features, upload_date, batch_id, category
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 
                 values_list = []
@@ -604,7 +611,8 @@ async def upload_multiple_images(
                         json.dumps(metadata["resnet_features"]),
                         json.dumps(metadata["opencv_features"]),
                         datetime.now(),
-                        batch_id
+                        batch_id,
+                        metadata["category"]
                     )
                     values_list.append(values)
                 
@@ -637,7 +645,7 @@ async def upload_multiple_images(
                         "success": True,
                         "image_id": metadata["id"],
                         "filename": metadata["original_name"],
-                        "image_url": f"http://0.0.0.0:5000/uploads/{metadata['filename']}",
+                        "image_url": f"http://0.0.0.0:8000/uploads/{metadata['filename']}",
                         "file_size": metadata["file_size"],
                         "dimensions": f"{metadata['image_width']}x{metadata['image_height']}",
                         "dominant_color": metadata["dominant_color"]
@@ -746,7 +754,7 @@ async def get_batch_images(batch_id: str):
         
         # Add image URLs and parse JSON
         for image in images:
-            image["image_url"] = f"http://0.0.0.0:5000/uploads/{image['filename']}"
+            image["image_url"] = f"http://0.0.0.0:8000/uploads/{image['filename']}"
             image["color_palette"] = json.loads(image["color_palette"])
         
         return {
@@ -763,7 +771,7 @@ async def get_batch_images(batch_id: str):
             cursor.close()
             connection.close()
 
-@app.get("/images/")
+@app.get("/api/images/")
 async def get_images(
     limit: Optional[int] = Query(10, description="Number of images to return"),
     offset: Optional[int] = Query(0, description="Offset for pagination"),
@@ -777,7 +785,7 @@ async def get_images(
         if batch_id:
             query = """
             SELECT id, filename, original_name, file_size, image_width, image_height,
-                   dominant_color, color_palette, upload_date, batch_id, created_at
+                   dominant_color, color_palette, upload_date, batch_id, category, created_at
             FROM images
             WHERE batch_id = %s
             ORDER BY created_at DESC
@@ -787,7 +795,7 @@ async def get_images(
         else:
             query = """
             SELECT id, filename, original_name, file_size, image_width, image_height,
-                   dominant_color, color_palette, upload_date, batch_id, created_at
+                   dominant_color, color_palette, upload_date, batch_id, category, created_at
             FROM images
             ORDER BY created_at DESC
             LIMIT %s OFFSET %s
@@ -798,7 +806,7 @@ async def get_images(
         
         # Add image URLs
         for image in images:
-            image["image_url"] = f"http://0.0.0.0:5000/uploads/{image['filename']}"
+            image["image_url"] = f"http://0.0.0.0:8000/uploads/{image['filename']}"
             image["color_palette"] = json.loads(image["color_palette"])
         
         return {
@@ -836,7 +844,7 @@ async def get_image(image_id: str):
         image["color_palette"] = json.loads(image["color_palette"])
         image["resnet_features"] = json.loads(image["resnet_features"])
         image["opencv_features"] = json.loads(image["opencv_features"])
-        image["image_url"] = f"http://0.0.0.0:5000/uploads/{image['filename']}"
+        image["image_url"] = f"http://0.0.0.0:8000/uploads/{image['filename']}"
         
         return image
     
@@ -1069,7 +1077,7 @@ async def search_images(
         
         # Add image URLs and parse JSON
         for image in images:
-            image["image_url"] = f"http://0.0.0.0:5000/uploads/{image['filename']}"
+            image["image_url"] = f"http://0.0.0.0:8000/uploads/{image['filename']}"
             image["color_palette"] = json.loads(image["color_palette"])
         
         return {
