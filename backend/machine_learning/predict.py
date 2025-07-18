@@ -1,31 +1,35 @@
-# predict.py
-import tensorflow as tf
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image
 import numpy as np
+import json
 
-def load_labels(path):
-    with open(path, 'r', encoding='utf-8') as f:
-        return [line.strip() for line in f]
+model = load_model("ML_Res/clothing_resnet50.keras")
 
-def preprocess(img_path):
-    img = tf.io.read_file(img_path)
-    img = tf.image.decode_jpeg(img, channels=3)
-    img = tf.image.resize(img, [224,224])
-    img = img / 255.0
-    return tf.expand_dims(img, 0)  # add batch dim
 
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) != 2:
-        print("Usage: python predict.py /path/to/image.jpg")
-        sys.exit(1)
+with open("ML_Res/class_names.json", "r") as f:
+    class_indices = json.load(f)
+class_names = list(class_indices.keys())
 
-    img_path = sys.argv[1]
-    labels   = load_labels('data/categories.txt')
-    model     = tf.keras.models.load_model('models/resnet50_clf')
+def predict_class(img_path):
+    img = image.load_img(img_path, target_size=(224, 224))
+    x = image.img_to_array(img) / 255.0
+    x = np.expand_dims(x, axis=0)
+    pred = model.predict(x, verbose=0)
+    return class_names[np.argmax(pred)]
 
-    img_tensor = preprocess(img_path)
-    logits = model(img_tensor, training=False).numpy()[0]
-    idx   = np.argmax(logits)
-    score = logits[idx]
+def parse_filename(filename):
+    parts = filename.split("_")
+    return {
+        "color": parts[0],
+        "gender": parts[1],
+        "occasion": parts[2],
+        "type": parts[3]  # may include extension, strip it with .split(".")[0]
+    }
 
-    print(f"Predicted: {labels[idx]}  (confidence: {score:.3f})")
+
+
+results = predict_class("train/tshirt/white_man_party_tshirt_26.jpg")
+# metadata = parse_filename("train/dress/black_girl_defense_dress_1.jpg")
+print(f"predicted class: {results}")
+
+

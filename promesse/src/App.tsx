@@ -17,23 +17,11 @@ import RenderRecommendations from './components/Recommendations';
 import AIStudioPage from './pages/AIStudioPage';
 import ImageGallery from "./components/ImageGallery"
 import axios from 'axios'
+import ClotheClassifier from './components/ClotheClassifier';
 
 function App() {
 
-  useEffect(() =>{
-    (
-      async () =>{
-        try {
-          const response = await axios.get("http://localhost:5000/images");
-          if (response.data){
-            console.log("Images got: ", response.data)
-          }
-        } catch (error) {
-          console.error("Error fetching images")
-        }
-      }
-    )();
-  },[]);
+
 
   return (
     <ThemeProvider>
@@ -44,6 +32,7 @@ function App() {
           <main className="pt-16">
             <Routes>
               <Route path="/" element={<IndexPage />}/>
+              <Route path='/classifier' element={<ClotheClassifier/>} />
               <Route path="/upload" element={<UploadForm />} />
               <Route path="/gallery" element={<ImageGallery />} />
               <Route path='/recommendations' element={<RenderRecommendations/>}/>

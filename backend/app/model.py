@@ -46,6 +46,7 @@ class User(Base):
     disabilities = Column(Text, nullable=True)
     profile_photo = Column(String(2048), nullable=True)
     body_photos = Column(JSON, nullable=True)
+    is_admin = Column(Boolean, default=False)
     weather_preferences = Column(JSON, nullable=True)
     temperature_range = Column(JSON, nullable=True)
     occasion_preferences = Column(JSON, nullable=True)

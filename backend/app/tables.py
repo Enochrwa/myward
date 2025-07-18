@@ -4,66 +4,80 @@ from typing import List, Optional, Dict,Any
 
 # Forward declaration for Outfit used in Occasion
 
+class UserBase(BaseModel):
+    email: str
+    is_active: bool = True
+    is_admin: bool = False
 
+class UserUpdate(UserBase):
+    password: Optional[str] = None
 
 class UserCreate(BaseModel):
     username: str
     email: str
     password: str
-    full_name: Optional[str] = None
+    full_name: Optional[str] = Field(None, alias="fullName")
     age: Optional[int] = None
     gender: Optional[str] = None
     height: Optional[str] = None
     weight: Optional[str] = None
     bmi: Optional[str] = None
-    bodyType: Optional[str] = None
-    skinTone: Optional[str] = None
+    body_type: Optional[str] = Field(None, alias="bodyType")
+    skin_tone: Optional[str] = Field(None, alias="skinTone")
     location: Optional[Dict[str, Any]] = None
     timezone: Optional[str] = None
     lifestyle: Optional[str] = None
-    budgetRange: Optional[str] = None
-    stylePreferences: Optional[str] = None
-    colorPreferences: Optional[str] = None
-    favoriteColors: Optional[str] = None
-    avoidColors: Optional[str] = None
+    budget_range: Optional[str] = Field(None, alias="budgetRange")
+    style_preferences: Optional[str] = Field(None, alias="stylePreferences")
+    color_preferences: Optional[str] = Field(None, alias="colorPreferences")
+    favorite_colors: Optional[str] = Field(None, alias="favoriteColors")
+    avoid_colors: Optional[str] = Field(None, alias="avoidColors")
     allergies: Optional[str] = None
     disabilities: Optional[str] = None
-    weatherPreferences: Optional[List[str]] = None
-    temperatureRange: Optional[List[str]] = None
-    occasionPreferences: Optional[List[str]] = None
-    profile_photo: Optional[str] = None
-    body_photos: Optional[List[str]] = None
+    weather_preferences: Optional[List[str]] = Field(None, alias="weatherPreferences")
+    temperature_range: Optional[List[str]] = Field(None, alias="temperatureRange")
+    occasion_preferences: Optional[List[str]] = Field(None, alias="occasionPreferences")
+    profile_photo: Optional[str] = Field(None, alias="profilePhoto")
+    body_photos: Optional[List[str]] = Field(None, alias="bodyPhotos")
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
 
 class UserResponse(BaseModel):
     id: int
     username: str
     email: str
-    full_name: Optional[str]
-    age: Optional[int]
-    gender: Optional[str]
-    height: Optional[str]
-    weight: Optional[str]
-    bmi: Optional[str]
-    body_type: Optional[str]
-    skin_tone: Optional[str]
-    location: Optional[Dict[str, Any]]
-    timezone: Optional[str]
-    lifestyle: Optional[str]
-    budget_range: Optional[str]
-    style_preferences: Optional[str]
-    color_preferences: Optional[str]
-    favorite_colors: Optional[str]
-    avoid_colors: Optional[str]
-    allergies: Optional[str]
-    disabilities: Optional[str]
-    profile_photo: Optional[str]
-    body_photos: Optional[List[str]]
-    weather_preferences: Optional[List[str]]
-    temperature_range: Optional[List[str]]
-    occasion_preferences: Optional[List[str]]
-    created_at: datetime
-    updated_at: datetime
-    extraction_metadata: Optional[Dict[str, Any]] = None
+    full_name: Optional[str] = Field(None, alias="fullName")
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    height: Optional[str] = None
+    weight: Optional[str] = None
+    bmi: Optional[str] = None
+    body_type: Optional[str] = Field(None, alias="bodyType")
+    skin_tone: Optional[str] = Field(None, alias="skinTone")
+    location: Optional[Dict[str, Any]] = None
+    timezone: Optional[str] = None
+    lifestyle: Optional[str] = None
+    budget_range: Optional[str] = Field(None, alias="budgetRange")
+    style_preferences: Optional[str] = Field(None, alias="stylePreferences")
+    color_preferences: Optional[str] = Field(None, alias="colorPreferences")
+    favorite_colors: Optional[str] = Field(None, alias="favoriteColors")
+    avoid_colors: Optional[str] = Field(None, alias="avoidColors")
+    allergies: Optional[str] = None
+    disabilities: Optional[str] = None
+    profile_photo: Optional[str] = Field(None, alias="profilePhoto")
+    body_photos: Optional[List[str]] = Field(None, alias="bodyPhotos")
+    weather_preferences: Optional[List[str]] = Field(None, alias="weatherPreferences")
+    temperature_range: Optional[List[str]] = Field(None, alias="temperatureRange")
+    occasion_preferences: Optional[List[str]] = Field(None, alias="occasionPreferences")
+    created_at: datetime = Field(..., alias="createdAt")
+    updated_at: datetime = Field(..., alias="updatedAt")
+    extraction_metadata: Optional[Dict[str, Any]] = Field(None, alias="extractionMetadata")
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
 
 
 class ClothingCategoryCreate(BaseModel):

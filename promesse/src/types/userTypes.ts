@@ -21,3 +21,16 @@ export interface User {
   email: string;
   // Add other user fields if necessary, e.g., from your auth context
 }
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  role: 'admin' | 'premium' | 'basic';
+  status: 'active' | 'suspended' | 'pending';
+  joinDate: string;
+  lastActive: string;
+  totalOutfits: number;
+  subscription: string;
+}

@@ -167,13 +167,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/users/me", response_model=schemas.User)
-async def read_users_me(user_update: UserCreate,current_user: schemas.User = Depends(get_current_user),db: Session = Depends(get_db)):
-    current_user.body_type = user_update.body_type
-    current_user.height = user_update.height
-    current_user.weight = user_update.weight
-    current_user.skin_tone = user_update.skin_tone
-    current_user.timezone = user_update.timezone
-    db.commit()
-    db.refresh(current_user)
+@router.get("/users/me", response_model=schemas.UserResponse)
+async def read_users_me(current_user: schemas.UserResponse = Depends(get_current_user)):
     return current_user

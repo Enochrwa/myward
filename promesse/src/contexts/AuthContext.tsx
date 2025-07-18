@@ -6,6 +6,32 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  fullName?: string;
+  age?: number;
+  gender?: string;
+  height?: string;
+  weight?: string;
+  bmi?: string;
+  bodyType?: string;
+  skinTone?: string;
+  location?: any;
+  timezone?: string;
+  lifestyle?: string;
+  budgetRange?: string;
+  stylePreferences?: string;
+  colorPreferences?: string;
+  favoriteColors?: string;
+  avoidColors?: string;
+  allergies?: string;
+  disabilities?: string;
+  profilePhoto?: string;
+  bodyPhotos?: string[];
+  weatherPreferences?: string[];
+  temperatureRange?: string[];
+  occasionPreferences?: string[];
+  createdAt: string;
+  updatedAt: string;
+  extractionMetadata?: any;
 }
 
 export interface AuthState {

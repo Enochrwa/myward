@@ -21,6 +21,11 @@ import base64
 import io
 from colorthief import ColorThief
 import webcolors
+
+from io import BytesIO
+from PIL import Image
+
+
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.applications.resnet50 import preprocess_input
 from tensorflow.keras.preprocessing import image
@@ -46,7 +51,9 @@ from app.routes import (
     outfit_routes,
     search_router,
     wardrobe,
-    user_profile
+    user_profile,
+    admin,
+    classifier
 )
 
 # Configure logging
@@ -81,6 +88,14 @@ MYSQL_CONFIG = {
 # Create directories
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+
+## EDIT
+
+
+
+
+##EDIT
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -102,6 +117,8 @@ app.include_router(outfit_routes.router, prefix="/api")
 app.include_router(wardrobe.router, prefix="/api")
 app.include_router(search_router.router, prefix="/api")
 app.include_router(other_routes.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
+app.include_router(classifier.router, prefix="/api")
 
 # Load ResNet50 model
 try:
@@ -496,7 +513,7 @@ async def upload_single_image(
         return ImageResponse(
             message="Image uploaded and processed successfully",
             image_id=metadata["id"],
-            image_url=f"http://0.0.0.0:5000/uploads/{metadata['filename']}",
+            image_url=f"http://172.0.0.1:8000/uploads/{metadata['filename']}",
             metadata=ImageMetadata(**metadata)
         )
     

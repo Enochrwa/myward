@@ -1,76 +1,25 @@
 
-import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, UserPlus, Mail, Shield, Trash2, Edit, Eye, Ban, CheckCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, MoreVertical, UserPlus, Trash2, Edit, Eye, Ban, CheckCircle, Mail, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  role: 'admin' | 'premium' | 'basic';
-  status: 'active' | 'suspended' | 'pending';
-  joinDate: string;
-  lastActive: string;
-  totalOutfits: number;
-  subscription: string;
-}
+import { useUsers } from '@/hooks/useUsers';
+import { User } from '@/types/userTypes';
 
 const AdminUserManagement = () => {
+  const { users, loading, error, updateUser, deleteUser } = useUsers();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const mockUsers: User[] = [
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=40',
-      role: 'premium',
-      status: 'active',
-      joinDate: '2024-01-15',
-      lastActive: '2 hours ago',
-      totalOutfits: 127,
-      subscription: 'Premium Monthly'
-    },
-    {
-      id: '2',
-      name: 'Emma Wilson',
-      email: 'emma@example.com',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40',
-      role: 'basic',
-      status: 'active',
-      joinDate: '2024-02-20',
-      lastActive: '1 day ago',
-      totalOutfits: 45,
-      subscription: 'Free'
-    },
-    {
-      id: '3',
-      name: 'Michael Chen',
-      email: 'michael@example.com',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40',
-      role: 'admin',
-      status: 'active',
-      joinDate: '2023-11-10',
-      lastActive: '30 minutes ago',
-      totalOutfits: 203,
-      subscription: 'Admin'
-    },
-    {
-      id: '4',
-      name: 'Jessica Davis',
-      email: 'jessica@example.com',
-      avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=40',
-      role: 'premium',
-      status: 'suspended',
-      joinDate: '2024-01-05',
-      lastActive: '1 week ago',
-      totalOutfits: 89,
-      subscription: 'Premium Yearly'
-    }
-  ];
+  const filteredUsers = useMemo(() => {
+    return users
+      .filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .filter(user => filterRole === 'all' || user.role === filterRole)
+      .filter(user => filterStatus === 'all' || user.status === filterStatus);
+  }, [users, searchTerm, filterRole, filterStatus]);
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -155,49 +104,75 @@ const AdminUserManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {mockUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <img src={user.avatar} alt="" className="w-10 h-10 rounded-full" />
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(user.status)}`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    <div>Last active: {user.lastActive}</div>
-                    <div>Joined: {user.joinDate}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {user.totalOutfits}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                        <Eye size={16} />
-                      </button>
-                      <button className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300">
-                        <Edit size={16} />
-                      </button>
-                      <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
-                        <Ban size={16} />
-                      </button>
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-8">
+                    <p>Loading users...</p>
                   </td>
                 </tr>
-              ))}
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-red-500">
+                    <p>Error loading users: {error.message}</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <img src={user.avatar} alt="" className="w-10 h-10 rounded-full" />
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(user.status)}`}>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <div>Last active: {user.lastActive}</div>
+                      <div>Joined: {user.joinDate}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {user.totalOutfits}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => updateUser(user.id, { role: user.role === 'admin' ? 'basic' : 'admin' })}
+                          className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => updateUser(user.id, { status: user.status === 'active' ? 'suspended' : 'active' })}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          {user.status === 'active' ? <Ban size={16} /> : <CheckCircle size={16} />}
+                        </button>
+                        <button
+                          onClick={() => deleteUser(user.id)}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

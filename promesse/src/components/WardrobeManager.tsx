@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AddItemModal from './AddItemModal';
 import EditItemModal from './EditItemModal';
@@ -174,8 +175,10 @@ const WardrobeManager = () => {
               </p>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <Button onClick={() => setIsAddModalOpen(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-owis-purple to-owis-bronze hover:from-owis-purple-dark hover:to-owis-bronze text-owis-forest">
-                <Plus size={16} className="mr-2" /> Add Item
+              <Button className="flex-1 sm:flex-none bg-gradient-to-r from-owis-purple to-owis-bronze hover:from-owis-purple-dark hover:to-owis-bronze text-owis-forest">
+                <Link to={"/gallery"}>
+                  <Plus size={16} className="mr-2" /> Add Item
+                </Link>
               </Button>
               <Button onClick={() => {}} variant="outline" className="flex-1 sm:flex-none border-owis-forest text-owis-forest hover:bg-owis-forest hover:text-white">
                 <Star size={16} className="mr-2" /> Create Outfit
