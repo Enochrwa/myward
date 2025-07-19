@@ -74,6 +74,29 @@ def extract_feature(img_path):
     f = feature_extractor.predict(x, verbose=0).flatten()
     return f / np.linalg.norm(f)
 
+
+def recommend_similar(img_path, top_k=5):
+    query_cat = predict_category(img_path)
+    query_feat = extract_feature(img_path)
+
+    knn = get_knn(query_cat)
+    dists, idxs = knn.kneighbors([query_feat], n_neighbors=top_k + 1)
+
+    # Exclude the image itself if it's in the dataset
+    results = []
+    for i, idx in enumerate(idxs[0]):
+        candidate_path = file_map[query_cat][idx]
+        if os.path.abspath(candidate_path) != os.path.abspath(img_path):
+            results.append(candidate_path)
+        if len(results) == top_k:
+            break
+
+    return {
+        "query_category": query_cat,
+        "recommendations": results
+    }
+
+
 # ── Outfit Recommendation with metadata filtering ───────────────────
 def recommend_outfit(img_path, top_k=TOP_K):
     query_cat = predict_category(img_path)
@@ -138,9 +161,84 @@ def display_recommendations(img_path, recommendation_dict):
 
     plt.show()
 
-# ── Demo ────────────────────────────────────────────────────────────
+# # ── Demo ────────────────────────────────────────────────────────────
+# if __name__ == "__main__":
+#     test_img = "train/coats/black_girl_party_coat_003.jpg"
+#     result = recommend_outfit(test_img)
+#     print(json.dumps(result, indent=2))
+#     display_recommendations(test_img, result["recommendations"])
+
+
+
 if __name__ == "__main__":
-    test_img = "train/coats/black_girl_party_coat_003.jpg"
-    result = recommend_outfit(test_img)
-    print(json.dumps(result, indent=2))
-    display_recommendations(test_img, result["recommendations"])
+    img_path = "train/shirt/blue_man_wedding_shirt_12.jpg"
+    result = recommend_similar(img_path, top_k=5)
+    print(f"Query Category: {result['query_category']}")
+    print("Recommended:")
+    for r in result["recommendations"]:
+        print(" -", r)
+
+
+
+# import numpy as np
+# import joblib, json
+# from tensorflow.keras.models import load_model
+# from tensorflow.keras.preprocessing import image
+# from tensorflow.keras.applications.resnet50 import preprocess_input, ResNet50
+# from tensorflow.keras.models import Model
+# from PIL import Image
+
+# # === Load everything once ===
+# classifier = load_model("ML_Res/clothing_resnet50.keras")
+# with open("ML_Res/class_names.json", "r") as f:
+#     class_indices = json.load(f)
+# class_names = list(class_indices.keys())
+
+# feature_model = Model(
+#     ResNet50(weights="imagenet", include_top=False, pooling="avg").input,
+#     ResNet50(weights="imagenet", include_top=False, pooling="avg").output,
+# )
+
+# with open("ML_Ready/file_map.json", "r") as f:
+#     file_map = json.load(f)
+
+# def classify_image(img_path: str) -> str:
+#     img = image.load_img(img_path, target_size=(224, 224))
+#     x = np.expand_dims(image.img_to_array(img) / 255.0, axis=0)
+#     preds = classifier.predict(x, verbose=0)
+#     return class_names[int(np.argmax(preds))]
+
+# def extract_features(img_path: str) -> np.ndarray:
+#     img = image.load_img(img_path, target_size=(224, 224))
+#     x = np.expand_dims(image.img_to_array(img), axis=0)
+#     x = preprocess_input(x)
+#     f = feature_model.predict(x, verbose=0).flatten()
+#     return f / np.linalg.norm(f)
+
+# def recommend_similar_items(img_path: str, top_n: int = 5):
+#     # Step 1: Classify
+#     category = classify_image(img_path)
+
+#     # Step 2: Extract feature
+#     feat = extract_features(img_path)
+
+#     # Step 3: Load KNN for that category
+#     knn_path = f"ML_Ready/knn_{category}.joblib"
+#     knn = joblib.load(knn_path)
+
+#     # Step 4: Query KNN
+#     distances, indices = knn.kneighbors([feat], n_neighbors=top_n)
+#     matched_files = [file_map[category][i] for i in indices[0]]
+
+#     return {
+#         "predicted_category": category,
+#         "recommendations": matched_files,
+#         "distances": distances[0].tolist(),
+#     }
+
+# # === Example ===
+# result = recommend_similar_items("train/shirt/gray_girl_defense_shirt_26.jpg")
+# print(f"Predicted: {result['predicted_category']}")
+# for i, (img, dist) in enumerate(zip(result["recommendations"], result["distances"])):
+#     print(f"{i+1}. {img} (distance: {dist:.4f})")
+

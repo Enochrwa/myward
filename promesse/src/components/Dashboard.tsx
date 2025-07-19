@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Shirt, 
   Calendar, 
@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import CategorizedWardrobe from './CategorizedWardrobe';
+import ClotheAnalytics from './ClotheAnalytics';
 import * as apiClient from '@/lib/apiClient';
 
 const Dashboard = () => {
@@ -36,6 +37,7 @@ const Dashboard = () => {
   const [uploading, setUploading] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ total: number; completed: number; failed: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -83,7 +85,11 @@ const Dashboard = () => {
         // Refresh the categorized wardrobe view by re-fetching
         // This is a simple way to trigger a re-render of the child component
         // A more robust solution might involve a shared state or context
-        window.location.reload(); 
+        // window.location.reload(); 
+        navigate("/wardrobe");
+      
+
+
       } else {
         console.error('Batch upload failed:', response.statusText);
       }
@@ -218,7 +224,7 @@ const Dashboard = () => {
             <CardDescription>All your clothes, automatically categorized by AI.</CardDescription>
           </CardHeader>
           <CardContent>
-            <CategorizedWardrobe />
+            <ClotheAnalytics />
           </CardContent>
         </Card>
 

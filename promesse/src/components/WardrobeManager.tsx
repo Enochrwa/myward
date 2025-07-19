@@ -23,6 +23,7 @@ import MLAnalysisComponent from './MLAnalysisComponent';
 import SmartRecommendationsComponent from './SmartRecommendationsComponent';
 import SimilarItemsFinderComponent from './SimilarItemsFinderComponent';
 import { WardrobeItemResponse, WardrobeItemCreate, WardrobeItemUpdate } from '@/lib/apiClient';
+import SingleGridWardrobe from './CategorizedWardrobe';
 
 const WardrobeManager = () => {
     const { token } = useAuth();
@@ -174,8 +175,9 @@ const WardrobeManager = () => {
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <Button onClick={() => setIsAddModalOpen(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-owis-purple to-owis-bronze hover:from-owis-purple-dark hover:to-owis-bronze text-owis-forest">
                 
-                  <Plus size={16} className="mr-2" /> Add Item
-                
+                  <Link to={"/dashboard"}>
+                    <Plus size={16} className="mr-2" /> Add Item
+                  </Link>
               </Button>
               <Button onClick={() => {}} variant="outline" className="flex-1 sm:flex-none border-owis-forest text-owis-forest hover:bg-owis-forest hover:text-white">
                 <Star size={16} className="mr-2" /> Create Outfit
@@ -186,10 +188,10 @@ const WardrobeManager = () => {
           <Tabs defaultValue="wardrobe" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="wardrobe">My Items</TabsTrigger>
-              <TabsTrigger value="ml-analysis"><Sparkles className="h-4 w-4 mr-1" /> AI Analysis</TabsTrigger>
+              {/* <TabsTrigger value="ml-analysis"><Sparkles className="h-4 w-4 mr-1" /> AI Analysis</TabsTrigger> */}
               <TabsTrigger value="recommendations"><Target className="h-4 w-4 mr-1" /> Smart Outfits</TabsTrigger>
               <TabsTrigger value="similar-items"><Palette className="h-4 w-4 mr-1" /> Find Similar</TabsTrigger>
-              <TabsTrigger value="tools">Tools</TabsTrigger>
+              {/* <TabsTrigger value="tools">Tools</TabsTrigger> */}
             </TabsList>
 
             <TabsContent value="wardrobe" className="space-y-6">
@@ -248,42 +250,16 @@ const WardrobeManager = () => {
                 </div>
               )}
 
-              {!isLoading && !error && filteredItems.length > 0 && (
-                <div className={viewMode === 'grid' ? "grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" : "space-y-4"}>
-                  {filteredItems.map((item) => (
-                    <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200 border-owis-sage/20 relative">
-                       <input type="checkbox" className="absolute top-2 left-2 h-4 w-4" onChange={(e) => handleSelectItem(item.id as number, e.target.checked)} checked={selectedItems.includes(item.id as number)} />
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {item.image_url && <img src={item.image_url} alt={item.name} className="w-full h-48 object-cover" />}
-                          <div className="space-y-2">
-                            <h3 className="font-semibold text-owis-charcoal text-sm">{item.name}</h3>
-                            <div className="flex flex-wrap gap-1">
-                              <Badge variant="secondary">{item.category}</Badge>
-                              <Badge variant="outline">{item.brand}</Badge>
-                            </div>
-                            <div className="text-xs text-owis-charcoal/50">Worn: {item.times_worn} times</div>
-                            <div className="flex justify-end gap-1 pt-2">
-                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleToggleFavorite(item)}><Heart size={14} className={item.favorite ? "text-red-500 fill-current" : ""} /></Button>
-                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleMarkAsWorn(item)}><Clock size={14} /></Button>
-                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditModal(item)}><Edit size={14} /></Button>
-                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteItem(item.id as number)}><Trash2 size={14} /></Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+              
+              <SingleGridWardrobe/>
               {!isLoading && !error && filteredItems.length === 0 && <div className="text-center py-12"><p>No items found.</p></div>}
             </TabsContent>
             
             {/* Other Tabs Content */}
-            <TabsContent value="ml-analysis"><MLAnalysisComponent onAnalysisComplete={() => {}} /></TabsContent>
+            {/* <TabsContent value="ml-analysis"><MLAnalysisComponent onAnalysisComplete={() => {}} /></TabsContent> */}
             <TabsContent value="recommendations"><SmartRecommendationsComponent onOutfitSelect={() => {}} /></TabsContent>
             <TabsContent value="similar-items"><SimilarItemsFinderComponent wardrobeItems={[]} onItemSelect={() => {}} /></TabsContent>
-            <TabsContent value="tools"><div>Tools placeholder</div></TabsContent>
+            {/* <TabsContent value="tools"><div>Tools placeholder</div></TabsContent> */}
           </Tabs>
         </div>
       </div>

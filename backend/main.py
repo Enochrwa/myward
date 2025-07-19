@@ -947,7 +947,7 @@ async def upload_single_image(
         return ImageResponse(
             message="Image uploaded and processed successfully",
             image_id=metadata["id"],
-            image_url=f"http://0.0.0.0:8000/uploads/{metadata['filename']}",
+            image_url=f"http://127.0.0.1:8000/uploads/{metadata['filename']}",
             metadata=ImageMetadata(**metadata)
         )
     
@@ -1072,7 +1072,7 @@ async def upload_multiple_images(
                         "success": True,
                         "image_id": metadata["id"],
                         "filename": metadata["original_name"],
-                        "image_url": f"http://0.0.0.0:8000/uploads/{metadata['filename']}",
+                        "image_url": f"http://127.0.0.1:8000/uploads/{metadata['filename']}",
                         "file_size": metadata["file_size"],
                         "dimensions": f"{metadata['image_width']}x{metadata['image_height']}",
                         "dominant_color": metadata["dominant_color"]
@@ -1181,7 +1181,7 @@ async def get_batch_images(batch_id: str):
         
         # Add image URLs and parse JSON
         for image in images:
-            image["image_url"] = f"http://0.0.0.0:8000/uploads/{image['filename']}"
+            image["image_url"] = f"http://127.0.0.1:8000/uploads/{image['filename']}"
             image["color_palette"] = json.loads(image["color_palette"])
         
         return {
@@ -1233,7 +1233,7 @@ async def get_images(
         
         # Add image URLs
         for image in images:
-            image["image_url"] = f"http://0.0.0.0:8000/uploads/{image['filename']}"
+            image["image_url"] = f"http://127.0.0.1:8000/uploads/{image['filename']}"
             image["color_palette"] = json.loads(image["color_palette"])
         
         return {
@@ -1271,7 +1271,7 @@ async def get_image(image_id: str):
         image["color_palette"] = json.loads(image["color_palette"])
         image["resnet_features"] = json.loads(image["resnet_features"])
         image["opencv_features"] = json.loads(image["opencv_features"])
-        image["image_url"] = f"http://0.0.0.0:8000/uploads/{image['filename']}"
+        image["image_url"] = f"http://127.0.0.1:8000/uploads/{image['filename']}"
         
         return image
     

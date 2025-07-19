@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import namer from 'color-namer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import * as apiClient from '@/lib/apiClient';
@@ -21,12 +22,11 @@ interface ImageItem {
     upload_date: string;
 }
 
-interface ApiResponse {
-    images: ImageItem[];
-}
+// API now returns direct array of ImageItem
+type ApiResponse = ImageItem[];
 
-const SingleGridWardrobe = () => {
-    const [allItems, setAllItems] = useState<ImageItem[]>([]);
+const CategorizedWardrobe = () => {
+    const [itemsByCategory, setItemsByCategory] = useState<Record<string, ImageItem[]>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -35,14 +35,21 @@ const SingleGridWardrobe = () => {
             setIsLoading(true);
             setError(null);
             try {
-                // Assuming your API returns the structure you showed
-                const response: ApiResponse = await apiClient.getAllClothes(new URLSearchParams());
+                // API returns direct array of items
+                const allItems: ApiResponse = await apiClient.getAllClothes(new URLSearchParams());
+                const categorizedItems: Record<string, ImageItem[]> = {};
                 
-                // Access the images array from the response
-                const items = response.images || [];
+                console.log("All Items: ", allItems);
                 
-                setAllItems(items);
-                console.log("ALl items: ", allItems)
+                for (const item of allItems?.images) {
+                    const category = item.category || 'Uncategorized';
+                    if (!categorizedItems[category]) {
+                        categorizedItems[category] = [];
+                    }
+                    categorizedItems[category].push(item);
+                }
+                
+                setItemsByCategory(categorizedItems);
             } catch (err: any) {
                 setError(err.message || 'Failed to fetch wardrobe items.');
             } finally {
@@ -59,6 +66,15 @@ const SingleGridWardrobe = () => {
             .replace(/\.(jpg|jpeg|png|gif)$/i, '')
             .replace(/_/g, ' ')
             .replace(/\b\w/g, l => l.toUpperCase());
+    };
+
+    const getColorName = (hex: string) => {
+        try {
+            const result = namer(hex);
+            return result.basic[0].name; // or 'pantone', 'html', etc.
+        } catch (error) {
+            return 'Unknown';
+        }
     };
 
     const formatFileSize = (bytes: number) => {
@@ -92,63 +108,70 @@ const SingleGridWardrobe = () => {
 
     return (
         <div className="w-full h-full grid grid-rows-[auto_1fr] gap-4 md:gap-6">
-            {allItems.length > 0 ? (
-                <>
-                    <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-owis-charcoal">
-                        All Items ({allItems.length})
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4 auto-rows-fr">
-                        {allItems.map((item) => (
-                            <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200 border-owis-sage/20 grid grid-rows-[1fr_auto]">
-                                <div className="grid">
-                                    <div className="relative">
-                                        <img 
-                                            src={item.image_url} 
-                                            alt={formatFileName(item.original_name)}
-                                            className="w-full h-32 sm:h-40 md:h-48 object-cover rounded-md"
-                                        />
-                                        {/* Color palette indicator */}
-                                        <div className="absolute top-1 right-1 sm:top-2 sm:right-2 grid grid-cols-3 gap-1">
-                                            {item.color_palette.slice(0, 3).map((color, index) => (
-                                                <div 
-                                                    key={index}
-                                                    className="w-2 h-2 sm:w-3 sm:h-3 rounded-full border border-white/50"
-                                                    style={{ backgroundColor: color }}
-                                                    title={color}
+            {Object.keys(itemsByCategory).length > 0 ? (
+                <div className="grid gap-4 md:gap-6 auto-rows-max">
+                    {Object.entries(itemsByCategory).map(([category, items]) => (
+                        <div key={category} className="grid gap-3 md:gap-4">
+                            <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-owis-charcoal capitalize">
+                                {category} ({items.length})
+                            </h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4 auto-rows-fr">
+                                {items.map((item) => (
+                                    <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200 border-owis-sage/20 grid grid-rows-[1fr_auto]">
+                                        <div className="grid">
+                                            <div className="relative">
+                                                <img 
+                                                    src={item.image_url} 
+                                                    alt={formatFileName(item.original_name)}
+                                                    className="w-full h-32 sm:h-40 md:h-48 object-cover rounded-md"
                                                 />
-                                            ))}
+                                                {/* Color palette indicator */}
+                                                <div className="absolute top-1 right-1 sm:top-2 sm:right-2 grid grid-cols-3 gap-1">
+                                                    {item.color_palette.slice(0, 3).map((color, index) => (
+                                                        <div 
+                                                            key={index}
+                                                            className="w-2 h-2 sm:w-3 sm:h-3 rounded-full border border-white/50"
+                                                            style={{ backgroundColor: color }}
+                                                            title={color}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <CardContent className="p-2 sm:p-3 md:p-4 grid gap-1 sm:gap-2">
-                                    <h3 className="font-semibold text-owis-charcoal text-xs sm:text-sm line-clamp-2">
-                                        {formatFileName(item.original_name)}
-                                    </h3>
-                                    <div className="grid grid-flow-col gap-1 justify-start">
-                                        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1 py-0 justify-self-start">
-                                            {item.category}
-                                        </Badge>
-                                        <Badge variant="outline" className="text-[10px] sm:text-xs px-1 py-0 justify-self-start hidden sm:inline-flex">
-                                            {item.image_width}x{item.image_height}
-                                        </Badge>
-                                    </div>
-                                    <div className="text-[10px] sm:text-xs text-gray-500 grid gap-1 hidden md:grid">
-                                        <p>Size: {formatFileSize(item.file_size)}</p>
-                                        <div className="grid grid-cols-[auto_auto_1fr] gap-1 items-center">
-                                            <span className="truncate">Dominant:</span>
-                                            <span 
-                                                className="w-2 h-2 sm:w-3 sm:h-3 rounded-full border border-gray-300"
-                                                style={{ backgroundColor: item.dominant_color }}
-                                                title={item.dominant_color}
-                                            />
-                                            <span className="text-[9px] sm:text-[10px] truncate">{item.dominant_color}</span>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </>
+                                        <CardContent className="p-2 sm:p-3 md:p-4 grid gap-1 sm:gap-2">
+                                            <h3 className="font-semibold text-owis-charcoal text-xs sm:text-sm line-clamp-2">
+                                                {formatFileName(item.original_name)}
+                                            </h3>
+                                            <div className="grid grid-flow-col gap-1 justify-start">
+                                                <Badge variant="secondary" className="text-[10px] sm:text-xs px-1 py-0 justify-self-start">
+                                                    {item.category}
+                                                </Badge>
+                                                <Badge variant="outline" className="text-[10px] sm:text-xs px-1 py-0 justify-self-start hidden sm:inline-flex">
+                                                    {item.image_width}x{item.image_height}
+                                                </Badge>
+                                            </div>
+                                            <div className="text-[10px] sm:text-xs text-gray-500 grid gap-1 hidden md:grid">
+                                                <p>Size: {formatFileSize(item.file_size)}</p>
+                                                <div className="grid grid-cols-[auto_auto_1fr] gap-1 items-center">
+                                                    <span className="truncate">Dominant:</span>
+                                                    <span 
+                                                        className="w-2 h-2 sm:w-3 sm:h-3 rounded-full border border-gray-300"
+                                                        style={{ backgroundColor: item.dominant_color }}
+                                                        title={item.dominant_color}
+                                                    />
+                                                    <div className="grid gap-0">
+                                                        <span className="text-[9px] sm:text-[10px] truncate">{item.dominant_color}</span>
+                                                        <span className="text-[9px] sm:text-[10px] truncate">{getColorName(item.dominant_color)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             ) : (
                 <div className="grid place-items-center py-8 md:py-12">
                     <p className="text-sm md:text-base">Your wardrobe is empty. Start by adding some items!</p>
@@ -158,4 +181,4 @@ const SingleGridWardrobe = () => {
     );
 };
 
-export default SingleGridWardrobe;
+export default CategorizedWardrobe;
