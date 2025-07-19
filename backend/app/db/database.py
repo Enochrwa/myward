@@ -72,6 +72,7 @@ def init_clothes_database():
             original_name VARCHAR(255) NOT NULL,
             category VARCHAR(255),
             category_confirmed BOOLEAN DEFAULT FALSE,
+            clothing_part VARCHAR(255),
             color_palette JSON,
             dominant_color VARCHAR(7),
             style VARCHAR(255),

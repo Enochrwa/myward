@@ -57,6 +57,8 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB per file
 MAX_FILES_PER_REQUEST = 20
 MIN_FILES_PER_REQUEST = 1
 
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -69,7 +71,7 @@ app.add_middleware(
 # Serve uploaded files
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 os.makedirs("static", exist_ok=True)
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 

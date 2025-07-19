@@ -90,9 +90,9 @@ async def upload_single_image(
                 INSERT INTO images (
                     id, filename, original_name, file_size, image_width, image_height,
                     dominant_color, color_palette, resnet_features, opencv_features, 
-                    upload_date, batch_id, category, background_removed, foreground_pixel_count,
+                    upload_date, batch_id, category, clothing_part, background_removed, foreground_pixel_count,
                     style, occasion, season, temperature_range, gender, material, pattern, user_id
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s)
                 """
             
             values = (
@@ -109,6 +109,7 @@ async def upload_single_image(
                 datetime.now(),
                 metadata["batch_id"],
                 metadata["category"],
+                metadata["clothing_part"],
                 metadata.get("background_removed", False),
                 metadata.get("foreground_pixel_count", 0),
                 metadata.get("style"),
@@ -292,8 +293,8 @@ async def upload_multiple_images(
                 INSERT INTO images (
                     id, filename, original_name, file_size, image_width, image_height,
                     dominant_color, color_palette, resnet_features, opencv_features, upload_date, batch_id, category,
-                    style, occasion, season, temperature_range, gender, material, pattern, user_id
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    clothing_part,style, occasion, season, temperature_range, gender, material, pattern, user_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 
                 values_list = []
@@ -313,6 +314,7 @@ async def upload_multiple_images(
                         datetime.now(),
                         batch_id,
                         metadata["category"],
+                         metadata["clothing_part"],
                         metadata.get("style"),
                         json.dumps(metadata.get("occasion")),
                         json.dumps(metadata.get("season")),
@@ -524,7 +526,7 @@ async def get_images(
         if batch_id:
             query = """
             SELECT id, filename, original_name, file_size, image_width, image_height,
-                   dominant_color, color_palette, upload_date, batch_id, category, 
+                   dominant_color, color_palette, upload_date, batch_id, category,clothing_part, 
                    style, occasion, season, temperature_range, gender, material, pattern,
                    created_at
             FROM images
@@ -538,7 +540,7 @@ async def get_images(
             SELECT id, filename, original_name, file_size, image_width, image_height,
                    dominant_color, color_palette, upload_date, batch_id, 
                    style, occasion, season, temperature_range, gender, material, pattern,
-                   category, created_at
+                   category,clothing_part, created_at
             FROM images
             ORDER BY created_at DESC
             LIMIT %s OFFSET %s

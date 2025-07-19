@@ -27,7 +27,7 @@ from tensorflow.keras.preprocessing import image
 import tensorflow as tf
 
 from ..routes.classifier import predict_class_from_pil
-
+from .category_to_part import CATEGORY_TO_PART
 from .color_utils import (
     rgb_to_hex, 
     get_color_name, 
@@ -515,6 +515,7 @@ def process_single_image(file_data, batch_id=None, extra_metadata=None):
         # Classify image
         img = Image.open(filepath).convert("RGB")
         category = predict_class_from_pil(img)
+        clothing_part = CATEGORY_TO_PART.get(category, "unknown")
         
         # Extract features
         resnet_features = extract_resnet_features(filepath)
@@ -539,6 +540,7 @@ def process_single_image(file_data, batch_id=None, extra_metadata=None):
             "upload_date": datetime.now().isoformat(),
             "batch_id": batch_id,
             "category": category,
+            "clothing_part":clothing_part,
             "background_removed": color_features.get("background_removed", False),  # New field
             "foreground_pixel_count": color_features.get("foreground_pixel_count", 0),  # New field
             "style": extra_metadata.get("style"),
