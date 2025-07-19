@@ -387,13 +387,13 @@ export const getOutfitRecommendations = async (
  * Get items similar to a target item
  */
 export const getSimilarItems = async (
-  targetItemId: number,
-  numSimilar: number = 5
-): Promise<SimilarItem[]> => {
-  return apiClient(`/ml/similar-items?target_item_id=${targetItemId}&num_similar=${numSimilar}`, {
-    method: 'POST'
+  targetItemId: string
+): Promise<any[]> => {
+  return apiClient(`/recommend/similar/${targetItemId}`, {
+    method: 'GET'
   });
 };
+
 
 /**
  * Train the recommendation model with user's wardrobe

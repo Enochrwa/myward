@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any
 import uuid
 import os
 import json
-
+from sklearn.neighbors import NearestNeighbors
 import uvicorn
 import logging
 from datetime import datetime
@@ -56,6 +56,7 @@ from app.routes import (
     wardrobe,
     user_profile,
     admin,
+    recommendation_routes,
     classifier
 )
 
@@ -122,6 +123,7 @@ app.include_router(search_router.router, prefix="/api")
 app.include_router(other_routes.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(classifier.router, prefix="/api")
+app.include_router(recommendation_routes.router, prefix="/api")
 
 # Load ResNet50 model
 try:
@@ -956,6 +958,78 @@ async def upload_single_image(
     except Exception as e:
         logger.error(f"Unexpected error in upload_single_image: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+
+@app.get("/api/recommend/similar/{image_id}")
+def recommend_similar(image_id: str, top_k: int = 5):
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # 1️⃣ Fetch the query image feature and category
+    cursor.execute("SELECT category, resnet_features FROM images WHERE id = %s", (image_id,))
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Image not found.")
+
+    category = row['category']
+    query_vec = np.array(json.loads(row['resnet_features']), dtype=np.float32)
+
+    # 2️⃣ Fetch all metadata and features for this category
+    cursor.execute("SELECT * FROM images WHERE category = %s", (category,))
+    metadata_rows = cursor.fetchall()
+
+    exclude_keys = {"resnet_features", "opencv_features"}
+    BASE_URL = "http://127.0.0.1:8000/uploads/"
+
+    metadata_map = {}
+    for r in metadata_rows:
+        meta = {k: v for k, v in r.items() if k not in exclude_keys}
+        if 'filename' in meta and meta['filename']:
+            meta['image_url'] = BASE_URL + meta['filename']
+        metadata_map[r['id']] = meta
+
+
+    # 3️⃣ Fetch their resnet_features separately
+    cursor.execute("SELECT id, resnet_features FROM images WHERE category = %s", (category,))
+    rows = cursor.fetchall()
+
+    ids = []
+    features = []
+
+    for r in rows:
+        ids.append(r['id'])
+        vec = np.array(json.loads(r['resnet_features']), dtype=np.float32)
+        features.append(vec)
+
+    if len(features) < top_k:
+        raise HTTPException(status_code=400, detail="Not enough images in this category to recommend.")
+
+    features = np.vstack(features)
+
+    # 4️⃣ Build KNN on-the-fly
+    knn = NearestNeighbors(n_neighbors=min(top_k + 1, len(features)), metric='euclidean')
+    knn.fit(features)
+
+    # 5️⃣ Find neighbors
+    dists, idxs = knn.kneighbors([query_vec])
+
+    # 6️⃣ Prepare response (exclude self, exclude resnet_features)
+    recommendations = []
+    for i in idxs[0]:
+        if ids[i] != image_id:
+            meta = metadata_map.get(ids[i])
+            if meta:
+                recommendations.append(meta)
+        if len(recommendations) >= top_k:
+            break
+
+    return {
+        "query_image_id": image_id,
+        "category": category,
+        "recommendations": recommendations
+    }
+
 
 @app.post("/api/upload-images/", response_model=BatchUploadResponse)
 async def upload_multiple_images(

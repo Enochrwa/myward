@@ -161,12 +161,6 @@ def display_recommendations(img_path, recommendation_dict):
 
     plt.show()
 
-# # ── Demo ────────────────────────────────────────────────────────────
-# if __name__ == "__main__":
-#     test_img = "train/coats/black_girl_party_coat_003.jpg"
-#     result = recommend_outfit(test_img)
-#     print(json.dumps(result, indent=2))
-#     display_recommendations(test_img, result["recommendations"])
 
 
 

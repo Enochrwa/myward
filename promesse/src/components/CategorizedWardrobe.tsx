@@ -3,6 +3,7 @@ import namer from 'color-namer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import * as apiClient from '@/lib/apiClient';
+import axios from 'axios';
 import LoadingSpinner from '@/components/ui/loading';
 
 // Define the actual data structure based on your API response
@@ -29,6 +30,26 @@ const CategorizedWardrobe = () => {
     const [itemsByCategory, setItemsByCategory] = useState<Record<string, ImageItem[]>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [clotheId, setClotheId] = useState<string>("")
+
+
+    useEffect(() =>{
+        (
+            async () =>{
+               if(clotheId){
+                 try {
+                    console.log("Item Id: ", clotheId)
+                    const response = await apiClient.getSimilarItems(clotheId);
+                    console.log("Recomendation response: ", response);
+                } catch (error:any) {
+                 console.error("Error getting recommendations: ", error)   
+                }
+               }
+            }
+        )();
+
+        
+    },[clotheId])
 
     useEffect(() => {
         const fetchItems = async () => {
@@ -119,7 +140,7 @@ const CategorizedWardrobe = () => {
                                 {items.map((item) => (
                                     <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200 border-owis-sage/20 grid grid-rows-[1fr_auto]">
                                         <div className="grid">
-                                            <div className="relative">
+                                            <div className="relative" onClick={() => setClotheId(item?.id)}>
                                                 <img 
                                                     src={item.image_url} 
                                                     alt={formatFileName(item.original_name)}

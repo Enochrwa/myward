@@ -99,6 +99,27 @@ class ClothingAttributeCreate(BaseModel):
     deepfashion_attribute_id: Optional[int] = None
     description: Optional[str] = None
 
+class ClotheItemResponse(BaseModel):
+    id: str
+    filename: str
+    original_name: str
+    file_size: int
+    image_width: int
+    image_height: int
+    dominant_color: str
+    color_palette: List[str]  # Assuming color_palette is a list of hex colors
+    resnet_features: List[float]  # Assuming it's a list of floats (embeddings)
+    opencv_features: List[float]  # Same as above
+    upload_date: datetime
+    batch_id: Optional[str] = None
+    category: Optional[str] = None
+    background_removed: bool = False
+    foreground_pixel_count: int = 0
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
 class ClothingAttributeResponse(BaseModel):
     id: int
     name: str
