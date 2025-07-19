@@ -394,6 +394,9 @@ export const getSimilarItems = async (
   });
 };
 
+export const updateCategory = (imageId: string, newCategory: string): Promise<{ message: string }> =>
+    apiClient('/update-category', { method: 'POST', body: { image_id: imageId, new_category: newCategory } });
+
 
 /**
  * Train the recommendation model with user's wardrobe

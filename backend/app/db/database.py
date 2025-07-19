@@ -71,6 +71,7 @@ def init_clothes_database():
             image_url VARCHAR(255),
             original_name VARCHAR(255) NOT NULL,
             category VARCHAR(255),
+            category_confirmed BOOLEAN DEFAULT FALSE,
             color_palette JSON,
             dominant_color VARCHAR(7),
             style VARCHAR(255),
@@ -98,6 +99,17 @@ def init_clothes_database():
         )
         """
         cursor.execute(create_images_table)
+
+        # Add category_confirmed column if it doesn't exist
+        try:
+            cursor.execute("ALTER TABLE images ADD COLUMN category_confirmed BOOLEAN DEFAULT FALSE")
+            connection.commit()
+            logger.info("Added 'category_confirmed' column to 'images' table.")
+        except Error as e:
+            if "Duplicate column name" in str(e):
+                pass  # Column already exists
+            else:
+                raise
         
         # Create batch_uploads table for tracking batch operations
         create_batch_table = """

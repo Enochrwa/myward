@@ -665,6 +665,10 @@ class BatchImageMetadata(BaseModel):
     upload_date: str
     processing_time: float
 
+class UpdateCategoryRequest(BaseModel):
+    image_id: str
+    new_category: str
+
 class Feedback(FeedbackBase): # Actual definition of Feedback schema
     id: int
     outfit_id: int

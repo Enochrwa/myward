@@ -18,7 +18,7 @@ import asyncio
 
 
 from ..db.database import get_db, get_database_connection
-from ..tables import ImageMetadata, ImageResponse,BatchUploadResponse,BatchImageMetadata
+from ..tables import ImageMetadata, ImageResponse,BatchUploadResponse,BatchImageMetadata, UpdateCategoryRequest
 from ..security import get_current_user
 from ..utils.image_processing import process_single_image
 
@@ -428,6 +428,36 @@ async def get_batches(
         logger.error(f"Error retrieving batches: {str(e)}")
         raise HTTPException(status_code=500, detail="Error retrieving batches")
     
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@router.post("/update-category")
+async def update_category(data: UpdateCategoryRequest):
+    """Update the category of an image"""
+    try:
+        connection = get_database_connection()
+        cursor = connection.cursor()
+
+        update_query = """
+        UPDATE images
+        SET category = %s, category_confirmed = TRUE
+        WHERE id = %s
+        """
+        
+        cursor.execute(update_query, (data.new_category, data.image_id))
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        return {"message": "Category updated successfully"}
+
+    except Error as e:
+        logger.error(f"Error updating category: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error updating category")
+
     finally:
         if connection.is_connected():
             cursor.close()
