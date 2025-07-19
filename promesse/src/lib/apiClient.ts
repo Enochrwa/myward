@@ -394,6 +394,14 @@ export const getSimilarItems = async (
   });
 };
 
+export const recommendOutfit = async (
+  imageId: number
+): Promise<any> => {
+  return apiClient(`/outfit/recommend/${imageId}`, {
+    method: 'GET'
+  });
+};
+
 export const updateCategory = (imageId: string, newCategory: string): Promise<{ message: string }> =>
     apiClient('/update-category', { method: 'POST', body: { image_id: imageId, new_category: newCategory } });
 

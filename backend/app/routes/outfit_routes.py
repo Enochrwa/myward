@@ -94,36 +94,59 @@ def fetch_items(cursor, category: str, gender: str, season: List[str], occasion:
     return filtered
 
 
-@router.get("/recommend/{image_id}")
-def recommend_outfit(image_id: str):
-    connection = get_database_connection()
-    cursor = connection.cursor(dictionary=True)
+def get_color_distance(c1, c2):
+    return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
 
-    cursor.execute("SELECT * FROM images WHERE id = %s", (image_id,))
-    base_item = cursor.fetchone()
+def hex_to_rgb(hex_color):
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+def recommend_outfit(image_id: str, db: Session = Depends(get_db)):
+    base_item = db.query(WardrobeItem).filter(WardrobeItem.id == image_id).first()
     if not base_item:
-        raise HTTPException(status_code=404, detail="Image not found.")
+        raise HTTPException(status_code=404, detail="Item not found")
 
-    base_item = clean_item(base_item)
-    gender = base_item.get('gender') or ''
-    season = base_item.get('season') or []
-    occasion = base_item.get('occasion') or []
+    base_item_dominant_color_rgb = hex_to_rgb(base_item.dominant_color_hex)
 
-    base_category = base_item['category']
-    categories_to_fetch = get_categories_to_fetch(base_category)
-
-    outfit = {base_category: base_item}
-
-    for cat in categories_to_fetch:
-        candidates = fetch_items(cursor, cat, gender, season, occasion, exclude_id=image_id)
-        if candidates:
-            outfit[cat] = random.choice(candidates)
-
-    return {
-        "query_image_id": image_id,
-        "base_category": base_category,
-        "outfit": outfit
+    outfit_structure = {
+        "tops": ["T-shirt", "Blouse", "Top", "Shirt"],
+        "bottoms": ["Pants", "Jeans", "Skirt", "Shorts"],
+        "outerwear": ["Jacket", "Coat", "Blazer", "Cardigan"],
+        "footwear": ["Shoes", "Boots", "Sneakers", "Sandals"],
     }
+
+    outfit = {"base": base_item}
+    used_item_ids = {base_item.id}
+
+    for category, subcategories in outfit_structure.items():
+        if base_item.category in subcategories:
+            continue
+
+        candidates = db.query(WardrobeItem).filter(
+            WardrobeItem.category.in_(subcategories),
+            WardrobeItem.id != base_item.id,
+            WardrobeItem.user_id == base_item.user_id,
+            WardrobeItem.id.notin_(used_item_ids)
+        ).all()
+
+        if not candidates:
+            continue
+
+        scored_candidates = []
+        for candidate in candidates:
+            candidate_dominant_color_rgb = hex_to_rgb(candidate.dominant_color_hex)
+            distance = get_color_distance(base_item_dominant_color_rgb, candidate_dominant_color_rgb)
+            score = 1 / (1 + distance)
+            scored_candidates.append((score, candidate))
+
+        scored_candidates.sort(key=lambda x: x[0], reverse=True)
+
+        if scored_candidates:
+            best_candidate = scored_candidates[0][1]
+            outfit[category] = best_candidate
+            used_item_ids.add(best_candidate.id)
+
+    return outfit
 
 
 
