@@ -120,6 +120,10 @@ export interface ClothingAttributeResponse extends ClothingAttributeCreate {
 // Wardrobe API Functions
 
 // CREATE
+export const createWardrobeItemWithImage = (formData: FormData): Promise<WardrobeItemResponse> => {
+    return apiClient('/wardrobe/', { method: 'POST', body: formData });
+};
+
 export const createWardrobeItem = (item: WardrobeItemCreate, imageFile?: File): Promise<WardrobeItemResponse> => {
     const formData = new FormData();
     Object.entries(item).forEach(([key, value]) => {
@@ -136,12 +140,12 @@ export const createWardrobeItem = (item: WardrobeItemCreate, imageFile?: File): 
         formData.append('file', imageFile);
     }
 
-    return apiClient('/wardrobe/', { method: 'POST', body: formData });
+    return createWardrobeItemWithImage(formData);
 };
 
 // READ ALL
 export const getAllItems = (params: URLSearchParams = new URLSearchParams()): Promise<WardrobeItemResponse[]> =>
-    apiClient(`/wardrobe/wardrobe-items/?${params.toString()}`);
+    apiClient(`/wardrobe/?${params.toString()}`);
 
 
 export const getAllClothes = (params: URLSearchParams = new URLSearchParams()): Promise<WardrobeItemResponse[]> =>

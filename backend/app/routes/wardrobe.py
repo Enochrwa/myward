@@ -13,47 +13,23 @@ from ..model import (
     StyleHistory, UserProfile, UserStyleProfile, OutfitRecommendation,
     ColorAnalysis, ItemClassification, Feedback, WeatherData
 )
-from ..db.database import get_db
-from ..security import get_current_user
 
-router = APIRouter(prefix="/wardrobe", tags=["Wardrobe"])
-
-
-
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
-from sqlalchemy.orm import Session
-from typing import List, Optional, Any, Dict
-from ..model import WardrobeItem, User
-import json
-from ..tables import WardrobeItemCreate, WardrobeItemUpdate, ClothingCategoryCreate, WardrobeItemResponse, ClothingAttributeCreate, ClothingAttributeResponse, ClothingCategoryResponse, WardrobeItem as WardrobeItemSchema
-from ..db.database import get_db
-from datetime import datetime, date
 import os
 import uuid
 # from ..utils.image_processing import extract_color_features, extract_resnet_features, get_image_dimensions
 from ..routes.classifier import predict_class_from_pil
 from PIL import Image
 
+
+from ..db.database import get_db
+from ..security import get_current_user
+
+router = APIRouter(prefix="/wardrobe", tags=["Wardrobe"])
+
 # CREATE
 @router.post("/", response_model=WardrobeItemResponse)
 async def create_wardrobe_item(
-    name: str = Form(...),
-    brand: Optional[str] = Form(None),
-    category_id: int = Form(...),
-    subcategory: Optional[str] = Form(None),
-    size: Optional[str] = Form(None),
-    price: Optional[float] = Form(None),
-    currency: str = Form("USD"),
-    material: Optional[str] = Form(None),
-    season: Optional[str] = Form(None),
-    weather_suitability: Optional[List[str]] = Form(None),
-    formality_level: int = Form(3),
-    source: Optional[str] = Form(None),
-    purchase_date: Optional[date] = Form(None),
-    color: Optional[str] = Form(None),
-    notes: Optional[str] = Form(None),
-    tags: Optional[List[str]] = Form(None),
-    condition: str = Form("good"),
+    item: WardrobeItemCreate = Depends(),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -72,31 +48,14 @@ async def create_wardrobe_item(
     classified_category = predict_class_from_pil(pil_image)
 
     # Create a WardrobeItemCreate instance from the form data
-    item_data = WardrobeItemCreate(
-        name=name,
-        brand=brand,
-        category_id=category_id,
-        subcategory=subcategory,
-        size=size,
-        price=price,
-        currency=currency,
-        material=material,
-        season=season,
-        weather_suitability=weather_suitability,
-        formality_level=formality_level,
-        image_url=f"/uploads/{unique_filename}",
-        source=source,
-        purchase_date=purchase_date,
-        color=color,
-        notes=notes,
-        tags=tags,
-        condition=condition,
-    )
+    item_data = item.dict()
+    item_data['image_url'] = f"/uploads/{unique_filename}"
+
 
     # Create the wardrobe item in the database
     db_item = WardrobeItem(
         user_id=current_user.id,
-        **item_data.dict(),
+        **item_data,
     )
     db.add(db_item)
     db.commit()
@@ -112,39 +71,91 @@ async def create_wardrobe_item(
     return db_item
 
 # READ ALL
-@router.get("/", response_model=List[WardrobeItemSchema])
-def get_all_items(db: Session = Depends(get_db), user_id: int = 1):
-    return db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
+@router.get("/", response_model=List[WardrobeItemResponse])
+def get_wardrobe_items(
+    category_id: Optional[int] = None,
+    season: Optional[str] = None,
+    favorite: Optional[bool] = None,
+    brand: Optional[str] = None,
+    formality_level: Optional[int] = None,
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    query = db.query(WardrobeItem).filter(WardrobeItem.user_id == current_user.id)
+    
+    if category_id:
+        query = query.filter(WardrobeItem.category_id == category_id)
+    if season:
+        query = query.filter(WardrobeItem.season == season)
+    if favorite is not None:
+        query = query.filter(WardrobeItem.favorite == favorite)
+    if brand:
+        query = query.filter(WardrobeItem.brand.ilike(f"%{brand}%"))
+    if formality_level:
+        query = query.filter(WardrobeItem.formality_level == formality_level)
+    
+    items = query.offset(skip).limit(limit).all()
+    return items
 
 # READ ONE
-@router.get("/{item_id}", response_model=WardrobeItemSchema)
-def get_item(item_id: int, db: Session = Depends(get_db)):
-    item = db.query(WardrobeItem).get(item_id)
+@router.get("/{item_id}", response_model=WardrobeItemResponse)
+def get_wardrobe_item(
+    item_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = db.query(WardrobeItem).filter(
+        WardrobeItem.id == item_id,
+        WardrobeItem.user_id == current_user.id
+    ).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
 
 # UPDATE
-@router.put("/{item_id}", response_model=WardrobeItemSchema)
-def update_item(item_id: int, update_data: WardrobeItemUpdate, db: Session = Depends(get_db)):
-    item = db.query(WardrobeItem).get(item_id)
+@router.put("/{item_id}", response_model=WardrobeItemResponse)
+def update_wardrobe_item(
+    item_id: int,
+    item_update: WardrobeItemCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = db.query(WardrobeItem).filter(
+        WardrobeItem.id == item_id,
+        WardrobeItem.user_id == current_user.id
+    ).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    for key, value in update_data.dict(exclude_unset=True).items():
-        setattr(item, key, value)
+    
+    for key, value in item_update.dict(exclude_unset=True).items():
+        if key == 'tags':
+            setattr(item, '_tags', json.dumps(value) if value else None)
+        else:
+            setattr(item, key, value)
+    
     db.commit()
     db.refresh(item)
     return item
 
 # DELETE
 @router.delete("/{item_id}")
-def delete_item(item_id: int, db: Session = Depends(get_db)):
-    item = db.query(WardrobeItem).get(item_id)
+def delete_wardrobe_item(
+    item_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = db.query(WardrobeItem).filter(
+        WardrobeItem.id == item_id,
+        WardrobeItem.user_id == current_.id
+    ).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
+    
     db.delete(item)
     db.commit()
-    return {"detail": "Item deleted successfully"}
+    return {"message": "Item deleted successfully"}
 
 
 
@@ -213,105 +224,6 @@ def get_attributes(
     attributes = query.offset(skip).limit(limit).all()
     return attributes
 
-# WARDROBE ITEM ROUTES
-@router.post("/wardrobe-items/", response_model=WardrobeItemResponse)
-def create_wardrobe_item(
-    item: WardrobeItemCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    item_data = item.dict()
-    item_data['user_id'] = current_user.id
-    item_data['tags'] = json.dumps(item.tags) if item.tags else None
-    
-    db_item = WardrobeItem(**item_data)
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
-    return db_item
-
-@router.get("/wardrobe-items/", response_model=List[WardrobeItemResponse])
-def get_wardrobe_items(
-    category_id: Optional[int] = None,
-    season: Optional[str] = None,
-    favorite: Optional[bool] = None,
-    brand: Optional[str] = None,
-    formality_level: Optional[int] = None,
-    skip: int = 0,
-    limit: int = 100,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    query = db.query(WardrobeItem).filter(WardrobeItem.user_id == current_user.id)
-    
-    if category_id:
-        query = query.filter(WardrobeItem.category_id == category_id)
-    if season:
-        query = query.filter(WardrobeItem.season == season)
-    if favorite is not None:
-        query = query.filter(WardrobeItem.favorite == favorite)
-    if brand:
-        query = query.filter(WardrobeItem.brand.ilike(f"%{brand}%"))
-    if formality_level:
-        query = query.filter(WardrobeItem.formality_level == formality_level)
-    
-    items = query.offset(skip).limit(limit).all()
-    return items
-
-@router.get("/wardrobe-items/{item_id}", response_model=WardrobeItemResponse)
-def get_wardrobe_item(
-    item_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    item = db.query(WardrobeItem).filter(
-        WardrobeItem.id == item_id,
-        WardrobeItem.user_id == current_user.id
-    ).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return item
-
-@router.put("/wardrobe-items/{item_id}", response_model=WardrobeItemResponse)
-def update_wardrobe_item(
-    item_id: int,
-    item_update: WardrobeItemCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    item = db.query(WardrobeItem).filter(
-        WardrobeItem.id == item_id,
-        WardrobeItem.user_id == current_user.id
-    ).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    for key, value in item_update.dict(exclude_unset=True).items():
-        if key == 'tags':
-            setattr(item, '_tags', json.dumps(value) if value else None)
-        else:
-            setattr(item, key, value)
-    
-    db.commit()
-    db.refresh(item)
-    return item
-
-@router.delete("/wardrobe-items/{item_id}")
-def delete_wardrobe_item(
-    item_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    item = db.query(WardrobeItem).filter(
-        WardrobeItem.id == item_id,
-        WardrobeItem.user_id == current_user.id
-    ).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    db.delete(item)
-    db.commit()
-    return {"message": "Item deleted successfully"}
 
 @router.post("/wardrobe-items/{item_id}/favorite")
 def toggle_favorite(

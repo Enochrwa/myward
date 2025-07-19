@@ -68,7 +68,7 @@ const Dashboard = () => {
     });
 
     try {
-      const response = await fetch(`http://localhost:8000/upload-images/`, {
+      const response = await fetch(`http://localhost:8000/api/upload-images/`, {
         method: 'POST',
         body: formData,
       });
