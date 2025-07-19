@@ -24,8 +24,29 @@ from ..security import get_current_user
 
 router = APIRouter(prefix="/outfit")
 
+# --- Outfit Structure ---
+outfit_structure = {
+    "outerwear": ["Overcoat", "Blazers", "Coats", "Jacket", "Hoodie", "Outwear", "Sweater"],
+    "tops": ["Shirt", "Blouse", "Croptop", "Tshirt"],
+    "bottoms": ["Jeans", "Trousers", "Shorts", "Skirt"],
+    "dresses": ["Dress", "Suit"],
+    "accessories": ["Bag", "Hat", "Sunglasses"],
+    "footwear": ["Shoes"]
+}
 
 
+def get_categories_to_fetch(base_category):
+    skip_group = None
+    for group, categories in outfit_structure.items():
+        if base_category in categories:
+            skip_group = group
+            break
+
+    categories_to_fetch = []
+    for group, categories in outfit_structure.items():
+        if group != skip_group:
+            categories_to_fetch.extend(categories)
+    return categories_to_fetch
 
 
 def build_image_url(filename: str) -> str:
@@ -34,31 +55,27 @@ def build_image_url(filename: str) -> str:
 
 
 def clean_item(item: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Exclude resnet_features, opencv_features and ensure season/occasion are lists.
-    """
     item.pop('resnet_features', None)
     item.pop('opencv_features', None)
 
-    # Normalize season and occasion fields to always be lists
     season = item.get('season')
     occasion = item.get('occasion')
 
     try:
         item['season'] = json.loads(season) if season else []
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, TypeError):
         item['season'] = [season] if season else []
 
     try:
         item['occasion'] = json.loads(occasion) if occasion else []
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, TypeError):
         item['occasion'] = [occasion] if occasion else []
 
     item['image_url'] = build_image_url(item['filename'])
     return item
 
 
-def fetch_items(cursor, category: str, gender: str, season: List[str], occasion: List[str]):
+def fetch_items(cursor, category: str, gender: str, season: List[str], occasion: List[str], exclude_id: str = None):
     query = """
         SELECT * FROM images
         WHERE category = %s AND gender = %s
@@ -68,6 +85,8 @@ def fetch_items(cursor, category: str, gender: str, season: List[str], occasion:
 
     filtered = []
     for row in rows:
+        if exclude_id and row['id'] == exclude_id:
+            continue
         cleaned = clean_item(row)
         if any(s in season for s in cleaned['season']) and any(o in occasion for o in cleaned['occasion']):
             filtered.append(cleaned)
@@ -80,26 +99,23 @@ def recommend_outfit(image_id: str):
     connection = get_database_connection()
     cursor = connection.cursor(dictionary=True)
 
-    # Fetch query image metadata
     cursor.execute("SELECT * FROM images WHERE id = %s", (image_id,))
     base_item = cursor.fetchone()
     if not base_item:
         raise HTTPException(status_code=404, detail="Image not found.")
 
     base_item = clean_item(base_item)
-    gender = base_item['gender']
-    season = base_item['season']
-    occasion = base_item['occasion']
+    gender = base_item.get('gender') or ''
+    season = base_item.get('season') or []
+    occasion = base_item.get('occasion') or []
 
-    categories_to_fetch = ["shirt", "jacket", "trousers", "shoes", "bag"]
     base_category = base_item['category']
-    if base_category in categories_to_fetch:
-        categories_to_fetch.remove(base_category)
+    categories_to_fetch = get_categories_to_fetch(base_category)
 
     outfit = {base_category: base_item}
 
     for cat in categories_to_fetch:
-        candidates = fetch_items(cursor, cat, gender, season, occasion)
+        candidates = fetch_items(cursor, cat, gender, season, occasion, exclude_id=image_id)
         if candidates:
             outfit[cat] = random.choice(candidates)
 
@@ -108,9 +124,6 @@ def recommend_outfit(image_id: str):
         "base_category": base_category,
         "outfit": outfit
     }
-
-##EDIT
-
 
 
 

@@ -29,13 +29,13 @@ const OutfitRecommendations: React.FC = () => {
     const fetchRandomOutfit = async () => {
         setLoading(true);
         setError(null);
-
         try {
-            const randomImageId = "c19c6edf-5f83-433c-be65-f4b3e1b1925e"; // Replace this later with dynamic logic
+            const randomImageId = "9a80d5e1-af72-4fc5-917f-c34d01b3dd50";
             const response = await axios.get<OutfitResponse>(
                 `http://127.0.0.1:8000/api/outfit/recommend/${randomImageId}`
             );
             setOutfitData(response.data);
+
             console.log("Outfits: ", response?.data)
         } catch (err) {
             console.error(err);
@@ -52,7 +52,27 @@ const OutfitRecommendations: React.FC = () => {
     const renderArrayOrString = (value?: string[] | string): string => {
         if (!value) return "N/A";
         if (Array.isArray(value)) return value.join(", ");
-        return value.replace(/"/g, ""); // In case backend sends '"Winter"' instead of 'Winter'
+        return value.replace(/"/g, "");
+    };
+
+    const groups = {
+        Outerwear: ["Overcoat", "Coats", "Blazers", "Jacket", "Hoodie", "Outwear"],
+        Tops: ["Shirt", "Blouse", "Croptop", "Tshirt", "Sweater"],
+        Bottoms: ["Jeans", "Trousers", "Shorts", "Skirt"],
+        Fullbody: ["Dress", "Suit"],
+        Accessories: ["Hat", "Sunglasses", "Bag"],
+        Footwear: ["Shoes"]
+    };
+
+    const groupItems = (outfit: { [category: string]: ItemMetadata }) => {
+        const grouped: { [groupName: string]: ItemMetadata[] } = {};
+        for (const [category, item] of Object.entries(outfit)) {
+            const group = Object.entries(groups).find(([, cats]) => cats.includes(category));
+            const groupName = group ? group[0] : "Other";
+            if (!grouped[groupName]) grouped[groupName] = [];
+            grouped[groupName].push(item);
+        }
+        return grouped;
     };
 
     return (
@@ -70,28 +90,34 @@ const OutfitRecommendations: React.FC = () => {
             {error && <p className="text-red-500">{error}</p>}
 
             {outfitData && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {Object.entries(outfitData.outfit).map(([category, item]) => (
-                        <div
-                            key={item.id}
-                            className="border rounded-2xl shadow-md p-4 flex flex-col items-center bg-white hover:shadow-lg transition"
-                        >
-                            <h2 className="text-xl font-semibold capitalize mb-2">{category}</h2>
-                            <div
-                                className="w-48 h-48 flex items-center justify-center rounded-xl mb-2"
-                                style={{ backgroundColor: item.dominant_color || "#f0f0f0" }}
-                            >
-                                <img
-                                    src={item.image_url}
-                                    alt={item.original_name || category}
-                                    className="max-w-full max-h-full object-contain rounded"
-                                />
+                <div className="space-y-8">
+                    {Object.entries(groupItems(outfitData.outfit)).map(([groupName, items]) => (
+                        <div key={groupName}>
+                            <h2 className="text-xl font-semibold mb-4">{groupName}</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {items.map((item) => (
+                                    <div
+                                        key={`${item.id}-${item.category}`}
+                                        className="border rounded-2xl shadow-md p-4 flex flex-col items-center bg-white hover:shadow-lg transition"
+                                    >
+                                        <h3 className="text-lg font-semibold capitalize mb-2">{item.category}</h3>
+                                        <div
+                                            className="w-48 h-48 flex items-center justify-center rounded-xl mb-2"
+                                            style={{ backgroundColor: item.dominant_color || "#f0f0f0" }}
+                                        >
+                                            <img
+                                                src={item.image_url}
+                                                alt={item.original_name || item.category}
+                                                className="max-w-full max-h-full object-contain rounded"
+                                            />
+                                        </div>
+                                        <p className="text-gray-600">Original: {item.original_name || "Unknown"}</p>
+                                        <p className="text-gray-500">Season: {renderArrayOrString(item.season)}</p>
+                                        <p className="text-gray-500">Occasion: {renderArrayOrString(item.occasion)}</p>
+                                        <p className="text-gray-500">Style: {item.style || "N/A"}</p>
+                                    </div>
+                                ))}
                             </div>
-                            <p className="text-gray-600">Original Name: {item.original_name || "Unknown"}</p>
-                            <p className="text-gray-600">Category: {item.category}</p>
-                            <p className="text-gray-500">Season: {renderArrayOrString(item.season)}</p>
-                            <p className="text-gray-500">Occasion: {renderArrayOrString(item.occasion)}</p>
-                            <p className="text-gray-500">Style: {item.style || "N/A"}</p>
                         </div>
                     ))}
                 </div>

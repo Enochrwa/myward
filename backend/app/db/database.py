@@ -49,6 +49,83 @@ def get_database_connection():
     except Error as e:
         logger.error(f"Error connecting to database: {str(e)}")
         raise HTTPException(status_code=500, detail="Database connection failed")
+    
+
+
+# Database functions
+def init_clothes_database():
+    """Initialize MySQL database and create tables"""
+    try:
+        connection = mysql.connector.connect(**MYSQL_CONFIG)
+        cursor = connection.cursor()
+        
+        # Create database if it doesn't exist
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {MYSQL_CONFIG['database']}")
+        cursor.execute(f"USE {MYSQL_CONFIG['database']}")
+        
+        # Create images table
+        create_images_table = """
+        CREATE TABLE IF NOT EXISTS images (
+            id VARCHAR(36) PRIMARY KEY,
+            filename VARCHAR(255) NOT NULL,
+            image_url VARCHAR(255),
+            original_name VARCHAR(255) NOT NULL,
+            category VARCHAR(255),
+            color_palette JSON,
+            dominant_color VARCHAR(7),
+            style VARCHAR(255),
+            occasion JSON,
+            season JSON,
+            temperature_range JSON,
+            gender VARCHAR(255),
+            material VARCHAR(255),
+            pattern VARCHAR(255),
+            upload_date DATETIME NOT NULL,
+            background_removed BOOLEAN DEFAULT FALSE,
+            foreground_pixel_count INT DEFAULT 0,
+            resnet_features JSON,
+            file_size INT,
+            image_width INT,
+            image_height INT,
+            opencv_features JSON,
+            batch_id VARCHAR(36),
+            user_id INT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_batch_id (batch_id),
+            INDEX idx_upload_date (upload_date),
+            INDEX idx_background_removed (background_removed),
+            INDEX idx_category (category)
+        )
+        """
+        cursor.execute(create_images_table)
+        
+        # Create batch_uploads table for tracking batch operations
+        create_batch_table = """
+        CREATE TABLE IF NOT EXISTS batch_uploads (
+            batch_id VARCHAR(36) PRIMARY KEY,
+            total_images INT NOT NULL,
+            successful_images INT NOT NULL,
+            failed_images INT NOT NULL,
+            upload_date DATETIME NOT NULL,
+            processing_time FLOAT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+        cursor.execute(create_batch_table)
+        
+        connection.commit()
+        logger.info("Database initialized successfully")
+        
+    except Error as e:
+        logger.error(f"Error initializing database: {str(e)}")
+        raise HTTPException(status_code=500, detail="Database initialization failed")
+    
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+
 
 
 def create_mysql_database_if_not_exists():

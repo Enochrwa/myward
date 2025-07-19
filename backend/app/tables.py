@@ -615,6 +615,56 @@ class FeedbackBase(BaseModel):
 class FeedbackCreate(FeedbackBase):
     pass
 
+
+
+##IMAGE PROCESSING
+
+
+# Pydantic models
+class ImageMetadata(BaseModel):
+    id: str
+    filename: str
+    original_name: str
+    file_size: int
+    image_width: int
+    image_height: int
+    dominant_color: str
+    color_palette: List[str]
+    resnet_features: List[float]
+    opencv_features: Dict[str, Any]
+    upload_date: str
+    category: Optional[str] = None
+    style: Optional[str] = None
+    occasion: Optional[List[str]] = None
+    season: Optional[List[str]] = None
+    temperature_range: Optional[Dict[str, int]] = None
+    gender: Optional[str] = None
+    material: Optional[str] = None
+    pattern: Optional[str] = None
+
+class ImageResponse(BaseModel):
+    message: str
+    image_id: str
+    image_url: str
+    metadata: ImageMetadata
+
+class BatchUploadResponse(BaseModel):
+    message: str
+    total_images: int
+    successful_uploads: int
+    failed_uploads: int
+    batch_id: str
+    results: List[Dict[str, Any]]
+    processing_time: float
+
+class BatchImageMetadata(BaseModel):
+    batch_id: str
+    total_images: int
+    successful_images: int
+    failed_images: int
+    upload_date: str
+    processing_time: float
+
 class Feedback(FeedbackBase): # Actual definition of Feedback schema
     id: int
     outfit_id: int
@@ -624,6 +674,9 @@ class Feedback(FeedbackBase): # Actual definition of Feedback schema
 
     class Config:
         from_attributes = True
+
+
+
 
 
 # Update forward references if Pydantic v1 style is strictly needed
