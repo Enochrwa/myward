@@ -258,7 +258,7 @@ const WardrobeManager = () => {
             {/* Other Tabs Content */}
             {/* <TabsContent value="ml-analysis"><MLAnalysisComponent onAnalysisComplete={() => {}} /></TabsContent> */}
             <TabsContent value="recommendations"><SmartRecommendationsComponent onOutfitSelect={() => {}} /></TabsContent>
-            <TabsContent value="similar-items"><SimilarItemsFinderComponent wardrobeItems={[]} onItemSelect={() => {}} /></TabsContent>
+            <TabsContent value="similar-items"><SimilarItemsFinderComponent/></TabsContent>
             {/* <TabsContent value="tools"><div>Tools placeholder</div></TabsContent> */}
           </Tabs>
         </div>
