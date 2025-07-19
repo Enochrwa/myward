@@ -119,9 +119,25 @@ export interface ClothingAttributeResponse extends ClothingAttributeCreate {
 
 // Wardrobe API Functions
 
-// CREATEI
-export const createWardrobeItem = (item: WardrobeItemCreate): Promise<WardrobeItemResponse> =>
-    apiClient('/wardrobe/wardrobe-items/', { method: 'POST', body: item });
+// CREATE
+export const createWardrobeItem = (item: WardrobeItemCreate, imageFile?: File): Promise<WardrobeItemResponse> => {
+    const formData = new FormData();
+    Object.entries(item).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+            if (Array.isArray(value)) {
+                value.forEach(v => formData.append(key, v));
+            } else {
+                formData.append(key, String(value));
+            }
+        }
+    });
+
+    if (imageFile) {
+        formData.append('file', imageFile);
+    }
+
+    return apiClient('/wardrobe/', { method: 'POST', body: formData });
+};
 
 // READ ALL
 export const getAllItems = (params: URLSearchParams = new URLSearchParams()): Promise<WardrobeItemResponse[]> =>

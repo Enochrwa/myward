@@ -146,26 +146,23 @@ async def register(
     }
 
 @router.post("/login", response_model=schemas.Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
     user_in_db = db.query(models.User).filter(
-        or_(
-            models.User.username == form_data.username,
-            models.User.email == form_data.username
-        )
+        models.User.username == credentials.username
     ).first()
 
     if not user_in_db:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username, email, or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
-    if not security.verify_password(form_data.password, user_in_db.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username, email, or password")
+    if not security.verify_password(credentials.password, user_in_db.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": user_in_db.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
 
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/users/me", response_model=schemas.UserResponse)
 async def read_users_me(current_user: schemas.UserResponse = Depends(get_current_user)):

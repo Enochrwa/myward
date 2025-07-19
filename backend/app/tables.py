@@ -153,6 +153,9 @@ class WardrobeItemResponse(BaseModel):
     last_worn: Optional[datetime]
     updated_at: datetime
 
+    class Config:
+        from_attributes = True
+
 class OutfitCreate(BaseModel):
     name: str
     description: Optional[str] = None

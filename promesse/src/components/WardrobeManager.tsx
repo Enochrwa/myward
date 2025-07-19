@@ -71,10 +71,7 @@ const WardrobeManager = () => {
 
     const handleSaveItem = async (newItemData: WardrobeItemCreate, imageFile?: File) => {
         try {
-            const savedItem = await apiClient.createWardrobeItem(newItemData);
-            if (imageFile && savedItem.id) {
-                await apiClient.uploadItemImage(savedItem.id, imageFile);
-            }
+            const savedItem = await apiClient.createWardrobeItem(newItemData, imageFile);
             toast({ title: "Success", description: `${savedItem.name} added.` });
             fetchItems();
             setIsAddModalOpen(false);
@@ -175,10 +172,10 @@ const WardrobeManager = () => {
               </p>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <Button className="flex-1 sm:flex-none bg-gradient-to-r from-owis-purple to-owis-bronze hover:from-owis-purple-dark hover:to-owis-bronze text-owis-forest">
-                <Link to={"/gallery"}>
+              <Button onClick={() => setIsAddModalOpen(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-owis-purple to-owis-bronze hover:from-owis-purple-dark hover:to-owis-bronze text-owis-forest">
+                
                   <Plus size={16} className="mr-2" /> Add Item
-                </Link>
+                
               </Button>
               <Button onClick={() => {}} variant="outline" className="flex-1 sm:flex-none border-owis-forest text-owis-forest hover:bg-owis-forest hover:text-white">
                 <Star size={16} className="mr-2" /> Create Outfit

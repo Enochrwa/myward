@@ -20,13 +20,95 @@ router = APIRouter(prefix="/wardrobe", tags=["Wardrobe"])
 
 
 
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
+from sqlalchemy.orm import Session
+from typing import List, Optional, Any, Dict
+from ..model import WardrobeItem, User
+import json
+from ..tables import WardrobeItemCreate, WardrobeItemUpdate, ClothingCategoryCreate, WardrobeItemResponse, ClothingAttributeCreate, ClothingAttributeResponse, ClothingCategoryResponse, WardrobeItem as WardrobeItemSchema
+from ..db.database import get_db
+from datetime import datetime, date
+import os
+import uuid
+# from ..utils.image_processing import extract_color_features, extract_resnet_features, get_image_dimensions
+from ..routes.classifier import predict_class_from_pil
+from PIL import Image
+
 # CREATE
-@router.post("/", response_model=WardrobeItemSchema)
-def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db), user_id: int = 1):
-    db_item = WardrobeItem(user_id=user_id, **item.dict())
+@router.post("/", response_model=WardrobeItemResponse)
+async def create_wardrobe_item(
+    name: str = Form(...),
+    brand: Optional[str] = Form(None),
+    category_id: int = Form(...),
+    subcategory: Optional[str] = Form(None),
+    size: Optional[str] = Form(None),
+    price: Optional[float] = Form(None),
+    currency: str = Form("USD"),
+    material: Optional[str] = Form(None),
+    season: Optional[str] = Form(None),
+    weather_suitability: Optional[List[str]] = Form(None),
+    formality_level: int = Form(3),
+    source: Optional[str] = Form(None),
+    purchase_date: Optional[date] = Form(None),
+    color: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    tags: Optional[List[str]] = Form(None),
+    condition: str = Form("good"),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Process the image
+    UPLOAD_DIR = "uploads"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4().hex}{file_extension}"
+    filepath = os.path.join(UPLOAD_DIR, unique_filename)
+    with open(filepath, "wb") as buffer:
+        buffer.write(await file.read())
+
+    # Classify image
+    pil_image = Image.open(filepath).convert("RGB")
+    classified_category = predict_class_from_pil(pil_image)
+
+    # Create a WardrobeItemCreate instance from the form data
+    item_data = WardrobeItemCreate(
+        name=name,
+        brand=brand,
+        category_id=category_id,
+        subcategory=subcategory,
+        size=size,
+        price=price,
+        currency=currency,
+        material=material,
+        season=season,
+        weather_suitability=weather_suitability,
+        formality_level=formality_level,
+        image_url=f"/uploads/{unique_filename}",
+        source=source,
+        purchase_date=purchase_date,
+        color=color,
+        notes=notes,
+        tags=tags,
+        condition=condition,
+    )
+
+    # Create the wardrobe item in the database
+    db_item = WardrobeItem(
+        user_id=current_user.id,
+        **item_data.dict(),
+    )
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
+
+    # Update the item with the classified category
+    # This assumes you have a way to map the classified category name to a category_id
+    # For now, we'll just add it to the subcategory field
+    db_item.subcategory = classified_category
+    db.commit()
+    db.refresh(db_item)
+    
     return db_item
 
 # READ ALL

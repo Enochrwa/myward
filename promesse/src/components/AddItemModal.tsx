@@ -4,7 +4,7 @@ import { X, Upload, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast'; // Corrected path for ShadCN UI
-import { WardrobeItemCreate } from './WardrobeManager'; // Import the interface
+import { WardrobeItemCreate } from '@/lib/apiClient'; // Import the interface
 
 export interface AddItemModalProps {
   isOpen: boolean;

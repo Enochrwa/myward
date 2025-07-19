@@ -499,7 +499,7 @@ const ImageGallery: React.FC = () => {
                   <Activity className="w-8 h-8 text-green-600 mr-3" />
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Size</p>
-                    <p className="text-2xl font-bold text-gray-900">{analytics.total_size_mb.toFixed(2)} MB</p>
+                    <p className="text-2xl font-bold text-gray-900">{analytics?.total_size_mb?.toFixed(2)} MB</p>
                   </div>
                 </div>
               </div>
@@ -510,7 +510,7 @@ const ImageGallery: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg Dimensions</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {Math.round(analytics.average_dimensions.width)} × {Math.round(analytics.average_dimensions.height)}
+                      {Math.round(analytics?.average_dimensions?.width)} × {Math.round(analytics?.average_dimensions?.height)}
                     </p>
                   </div>
                 </div>
@@ -524,7 +524,7 @@ const ImageGallery: React.FC = () => {
                   <Activity className="w-8 h-8 text-orange-600 mr-3" />
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Batches</p>
-                    <p className="text-2xl font-bold text-gray-900">{analytics.batch_statistics.total_batches}</p>
+                    <p className="text-2xl font-bold text-gray-900">{analytics?.batch_statistics?.total_batches}</p>
                   </div>
                 </div>
               </div>
@@ -535,7 +535,7 @@ const ImageGallery: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg Batch Size</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {Math.round(analytics.batch_statistics.average_batch_size)}
+                      {Math.round(analytics?.batch_statistics?.average_batch_size)}
                     </p>
                   </div>
                 </div>
@@ -547,7 +547,7 @@ const ImageGallery: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg Process Time</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {formatTime(analytics.batch_statistics.average_processing_time)}
+                      {formatTime(analytics?.batch_statistics?.average_processing_time)}
                     </p>
                   </div>
                 </div>
@@ -558,19 +558,19 @@ const ImageGallery: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Color Distribution</h3>
               <div className="space-y-3">
-                {analytics.color_distribution.map((colorData, index) => (
+                {analytics?.color_distribution?.map((colorData, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <div
                       className="w-6 h-6 rounded-full border-2 border-gray-200"
-                      style={{ backgroundColor: colorData.dominant_color }}
+                      style={{ backgroundColor: colorData?.dominant_color }}
                     />
                     <div className="flex-1">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-700">
-                          {colorData.dominant_color}
+                          {colorData?.dominant_color}
                         </span>
                         <span className="text-sm text-gray-500">
-                          {colorData.count} images
+                          {colorData?.count} images
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
@@ -603,28 +603,28 @@ const ImageGallery: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {analytics.recent_batches.map((batch) => (
-                      <tr key={batch.batch_id} className="hover:bg-gray-50 cursor-pointer" onClick={() => {
+                    {analytics?.recent_batches?.map((batch) => (
+                      <tr key={batch?.batch_id} className="hover:bg-gray-50 cursor-pointer" onClick={() => {
                         setActiveTab('gallery');
                         setSelectedBatch(batch.batch_id);
                       }}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 truncate max-w-xs">
-                          {batch.batch_id}
+                          {batch?.batch_id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {batch.total_images}
+                          {batch?.total_images}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                          {batch.successful_images}
+                          {batch?.successful_images}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                          {batch.failed_images}
+                          {batch?.failed_images}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatTime(batch.processing_time)}
+                          {formatTime(batch?.processing_time)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(batch.upload_date)}
+                          {formatDate(batch?.upload_date)}
                         </td>
                       </tr>
                     ))}
@@ -658,7 +658,7 @@ const ImageGallery: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {analytics?.recent_batches.map((batch) => (
+                      {analytics?.recent_batches?.map((batch) => (
                         <tr key={batch.batch_id} className="hover:bg-gray-50">
                           <td 
                             className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:underline truncate max-w-xs"

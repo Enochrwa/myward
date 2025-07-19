@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import * as apiClient from '@/lib/apiClient';
 import LoadingSpinner from '@/components/ui/loading';
 
-// Define the actual data structure based on your API response
 interface ImageItem {
     id: string;
     batch_id: string;
@@ -35,11 +34,9 @@ const CategorizedWardrobe = () => {
             setIsLoading(true);
             setError(null);
             try {
-                // Assuming your API returns the structure you showed
                 const response: ApiResponse = await apiClient.getAllClothes(new URLSearchParams());
                 const categorizedItems: Record<string, ImageItem[]> = {};
                 
-                // Access the images array from the response
                 const allItems = response.images || [];
                 
                 for (const item of allItems) {
@@ -62,7 +59,6 @@ const CategorizedWardrobe = () => {
     }, []);
 
     const formatFileName = (originalName: string) => {
-        // Remove file extension and replace underscores with spaces, then capitalize
         return originalName
             .replace(/\.(jpg|jpeg|png|gif)$/i, '')
             .replace(/_/g, ' ')
@@ -79,87 +75,116 @@ const CategorizedWardrobe = () => {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center py-6 md:py-12">
-                <LoadingSpinner size="lg" />
-                <p className="ml-4 text-owis-charcoal/70 text-sm md:text-base">Loading wardrobe...</p>
+            <div className="w-full h-full flex items-center justify-center py-8">
+                <div className="flex items-center gap-3">
+                    <LoadingSpinner size="lg" />
+                    <span className="text-sm text-gray-600">Loading wardrobe...</span>
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="text-center py-6 md:py-12 bg-red-50 p-4 md:p-6 rounded-lg">
-                <p className="text-red-600 text-sm md:text-base">{error}</p>
+            <div className="w-full h-full flex items-center justify-center py-8">
+                <div className="bg-red-50 px-4 py-3 rounded-md max-w-md text-center">
+                    <p className="text-red-600 text-sm">{error}</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="w-full space-y-4 md:space-y-6">
+        <div className="w-full h-full space-y-6 pb-4">
             {Object.keys(itemsByCategory).length > 0 ? (
-                Object.entries(itemsByCategory).map(([category, items]) => (
-                    <div key={category} className="w-full">
-                        <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-owis-charcoal mb-3 md:mb-4 capitalize">
-                            {category} ({items.length})
-                        </h2>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
-                            {items.map((item) => (
-                                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200 border-owis-sage/20">
-                                    <CardContent className="p-2 sm:p-3 md:p-4">
-                                        <div className="space-y-2 sm:space-y-3">
-                                            <div className="relative">
-                                                <img 
-                                                    src={item.image_url} 
-                                                    alt={formatFileName(item.original_name)}
-                                                    className="w-full h-32 sm:h-40 md:h-48 object-cover rounded-md"
-                                                />
-                                                {/* Color palette indicator */}
-                                                <div className="absolute top-1 right-1 sm:top-2 sm:right-2 flex gap-1">
-                                                    {item.color_palette.slice(0, 3).map((color, index) => (
-                                                        <div 
-                                                            key={index}
-                                                            className="w-2 h-2 sm:w-3 sm:h-3 rounded-full border border-white/50"
-                                                            style={{ backgroundColor: color }}
-                                                            title={color}
-                                                        />
-                                                    ))}
-                                                </div>
+                <>
+                    {Object.entries(itemsByCategory).map(([category, items]) => (
+                        <section key={category} className="space-y-3">
+                            <header className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 pb-2 pt-1">
+                                <h2 className="text-lg font-semibold text-gray-800 capitalize">
+                                    {category} <span className="text-gray-500 font-medium">({items.length})</span>
+                                </h2>
+                            </header>
+                            
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                                {items.map((item) => (
+                                    <Card 
+                                        key={item.id} 
+                                        className="group overflow-hidden hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-gray-300 flex flex-col"
+                                    >
+                                        <div className="relative aspect-square overflow-hidden">
+                                            <img 
+                                                src={item.image_url} 
+                                                alt={formatFileName(item.original_name)}
+                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                loading="lazy"
+                                            />
+                                            
+                                            <div className="absolute top-2 right-2 flex gap-1">
+                                                {item.color_palette.slice(0, 3).map((color, index) => (
+                                                    <div 
+                                                        key={index}
+                                                        className="w-3 h-3 rounded-full border border-white/50 shadow-sm"
+                                                        style={{ backgroundColor: color }}
+                                                        title={color}
+                                                    />
+                                                ))}
                                             </div>
-                                            <div className="space-y-1 sm:space-y-2">
-                                                <h3 className="font-semibold text-owis-charcoal text-xs sm:text-sm line-clamp-2">
-                                                    {formatFileName(item.original_name)}
-                                                </h3>
+                                        </div>
+                                        
+                                        <CardContent className="p-3 flex-1 flex flex-col">
+                                            <h3 className="font-medium text-gray-900 text-sm line-clamp-2 mb-1">
+                                                {formatFileName(item.original_name)}
+                                            </h3>
+                                            
+                                            <div className="mt-auto space-y-2">
                                                 <div className="flex flex-wrap gap-1">
-                                                    <Badge variant="secondary" className="text-[10px] sm:text-xs px-1 py-0">
-                                                        {item.category}
+                                                    <Badge 
+                                                        variant="secondary" 
+                                                        className="text-xs font-medium px-1.5 py-0.5 capitalize"
+                                                    >
+                                                        {item.category.toLowerCase()}
                                                     </Badge>
-                                                    <Badge variant="outline" className="text-[10px] sm:text-xs px-1 py-0 hidden sm:inline-flex">
+                                                    <Badge 
+                                                        variant="outline" 
+                                                        className="text-xs px-1.5 py-0.5 hidden sm:inline-flex"
+                                                    >
                                                         {item.image_width}x{item.image_height}
                                                     </Badge>
                                                 </div>
-                                                <div className="text-[10px] sm:text-xs text-gray-500 space-y-1 hidden md:block">
-                                                    <p>Size: {formatFileSize(item.file_size)}</p>
-                                                    <p className="flex items-center">
-                                                        <span className="truncate">Dominant:</span>
-                                                        <span 
-                                                            className="inline-block w-2 h-2 sm:w-3 sm:h-3 rounded-full ml-1 border border-gray-300 flex-shrink-0"
-                                                            style={{ backgroundColor: item.dominant_color }}
-                                                            title={item.dominant_color}
-                                                        />
-                                                        <span className="ml-1 text-[9px] sm:text-[10px] truncate">{item.dominant_color}</span>
-                                                    </p>
+                                                
+                                                <div className="text-xs text-gray-500 space-y-1 hidden md:block">
+                                                    <div className="flex items-center justify-between">
+                                                        <span>Size:</span>
+                                                        <span className="font-medium">{formatFileSize(item.file_size)}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span>Dominant:</span>
+                                                        <div className="flex items-center gap-1">
+                                                            <span 
+                                                                className="w-3 h-3 rounded-full border border-gray-200"
+                                                                style={{ backgroundColor: item.dominant_color }}
+                                                            />
+                                                            <span className="truncate max-w-[80px]">
+                                                                {item.dominant_color}
+                                                            </span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
-                ))
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        </section>
+                    ))}
+                </>
             ) : (
-                <div className="text-center py-8 md:py-12">
-                    <p className="text-sm md:text-base">Your wardrobe is empty. Start by adding some items!</p>
+                <div className="w-full h-full flex items-center justify-center py-12">
+                    <div className="text-center max-w-md space-y-2">
+                        <h3 className="text-lg font-medium text-gray-700">Your wardrobe is empty</h3>
+                        <p className="text-sm text-gray-500">Start by uploading some clothing items to see them organized here.</p>
+                    </div>
                 </div>
             )}
         </div>

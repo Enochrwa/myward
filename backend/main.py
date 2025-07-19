@@ -447,7 +447,7 @@ async def root():
         "max_file_size_mb": MAX_FILE_SIZE / (1024 * 1024)
     }
 
-@app.post("/upload-image/", response_model=ImageResponse)
+@app.post("/api/upload-image/", response_model=ImageResponse)
 async def upload_single_image(
     file: UploadFile = File(...),
     description: Optional[str] = Form(None)
@@ -530,7 +530,7 @@ async def upload_single_image(
         logger.error(f"Unexpected error in upload_single_image: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.post("/upload-images/", response_model=BatchUploadResponse)
+@app.post("/api/upload-images/", response_model=BatchUploadResponse)
 async def upload_multiple_images(
     files: List[UploadFile] = File(...),
     description: Optional[str] = Form(None)
@@ -692,7 +692,7 @@ async def upload_multiple_images(
         logger.error(f"Unexpected error in upload_multiple_images: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/batches/")
+@app.get("/api/batches/")
 async def get_batches(
     limit: Optional[int] = Query(10, description="Number of batches to return"),
     offset: Optional[int] = Query(0, description="Offset for pagination")
@@ -725,7 +725,7 @@ async def get_batches(
             cursor.close()
             connection.close()
 
-@app.get("/batches/{batch_id}")
+@app.get("/api/batches/{batch_id}")
 async def get_batch_images(batch_id: str):
     """Get all images from a specific batch"""
     try:
@@ -823,7 +823,7 @@ async def get_images(
             cursor.close()
             connection.close()
 
-@app.get("/images/{image_id}")
+@app.get("/api/images/{image_id}")
 async def get_image(image_id: str):
     """Get specific image by ID"""
     try:
@@ -857,7 +857,7 @@ async def get_image(image_id: str):
             cursor.close()
             connection.close()
 
-@app.delete("/images/{image_id}")
+@app.delete("/api/images/{image_id}")
 async def delete_image(image_id: str):
     """Delete an image"""
     try:
@@ -891,7 +891,7 @@ async def delete_image(image_id: str):
             cursor.close()
             connection.close()
 
-@app.delete("/batches/{batch_id}")
+@app.delete("/api/batches/{batch_id}")
 async def delete_batch(batch_id: str):
     """Delete an entire batch of images"""
     try:
@@ -936,7 +936,7 @@ async def delete_batch(batch_id: str):
             cursor.close()
             connection.close()
 
-@app.get("/analytics/")
+@app.get("/api/analytics/")
 async def get_analytics():
     """Get analytics about uploaded images"""
     try:
@@ -1013,7 +1013,7 @@ async def get_analytics():
             cursor.close()
             connection.close()
 
-@app.get("/search/")
+@app.get("/api/search/")
 async def search_images(
     color: Optional[str] = Query(None, description="Search by dominant color (hex format)"),
     min_width: Optional[int] = Query(None, description="Minimum image width"),
