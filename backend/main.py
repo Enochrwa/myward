@@ -149,6 +149,14 @@ class ImageMetadata(BaseModel):
     resnet_features: List[float]
     opencv_features: Dict[str, Any]
     upload_date: str
+    category: Optional[str] = None
+    style: Optional[str] = None
+    occasion: Optional[List[str]] = None
+    season: Optional[List[str]] = None
+    temperature_range: Optional[Dict[str, int]] = None
+    gender: Optional[str] = None
+    material: Optional[str] = None
+    pattern: Optional[str] = None
 
 class ImageResponse(BaseModel):
     message: str
@@ -189,19 +197,27 @@ def init_database():
         CREATE TABLE IF NOT EXISTS images (
             id VARCHAR(36) PRIMARY KEY,
             filename VARCHAR(255) NOT NULL,
+            image_url VARCHAR(255),
             original_name VARCHAR(255) NOT NULL,
-            file_size INT NOT NULL,
-            image_width INT NOT NULL,
-            image_height INT NOT NULL,
-            dominant_color VARCHAR(7) NOT NULL,
-            color_palette JSON NOT NULL,
-            resnet_features JSON NOT NULL,
-            opencv_features JSON NOT NULL,
-            upload_date DATETIME NOT NULL,
-            batch_id VARCHAR(36),
             category VARCHAR(255),
+            color_palette JSON,
+            dominant_color VARCHAR(7),
+            style VARCHAR(255),
+            occasion JSON,
+            season JSON,
+            temperature_range JSON,
+            gender VARCHAR(255),
+            material VARCHAR(255),
+            pattern VARCHAR(255),
+            upload_date DATETIME NOT NULL,
             background_removed BOOLEAN DEFAULT FALSE,
             foreground_pixel_count INT DEFAULT 0,
+            resnet_features JSON,
+            file_size INT,
+            image_width INT,
+            image_height INT,
+            opencv_features JSON,
+            batch_id VARCHAR(36),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_batch_id (batch_id),
             INDEX idx_upload_date (upload_date),
@@ -795,8 +811,10 @@ def get_image_dimensions(image_path):
 #         }
 
 
-def process_single_image(file_data, batch_id=None):
+def process_single_image(file_data, batch_id=None, extra_metadata=None):
     """Process a single image - used for parallel processing"""
+    if extra_metadata is None:
+        extra_metadata = {}
     try:
         file_content, filename, original_name = file_data
         
@@ -840,7 +858,14 @@ def process_single_image(file_data, batch_id=None):
             "batch_id": batch_id,
             "category": category,
             "background_removed": color_features.get("background_removed", False),  # New field
-            "foreground_pixel_count": color_features.get("foreground_pixel_count", 0)  # New field
+            "foreground_pixel_count": color_features.get("foreground_pixel_count", 0),  # New field
+            "style": extra_metadata.get("style"),
+            "occasion": extra_metadata.get("occasion"),
+            "season": extra_metadata.get("season"),
+            "temperature_range": extra_metadata.get("temperature_range"),
+            "gender": extra_metadata.get("gender"),
+            "material": extra_metadata.get("material"),
+            "pattern": extra_metadata.get("pattern"),
         }
         
         return {
@@ -876,7 +901,14 @@ async def root():
 @app.post("/api/upload-image/", response_model=ImageResponse)
 async def upload_single_image(
     file: UploadFile = File(...),
-    description: Optional[str] = Form(None)
+    style: Optional[str] = Form(None),
+    occasion: Optional[str] = Form(None),
+    season: Optional[str] = Form(None),
+    temperature_min: Optional[int] = Form(None),
+    temperature_max: Optional[int] = Form(None),
+    gender: Optional[str] = Form(None),
+    material: Optional[str] = Form(None),
+    pattern: Optional[str] = Form(None)
 ):
     """Upload and process a single image (legacy endpoint)"""
     try:
@@ -890,8 +922,17 @@ async def upload_single_image(
             raise HTTPException(status_code=400, detail="File too large")
         
         # Process the image
+        extra_metadata = {
+            "style": style,
+            "occasion": occasion.split(',') if occasion else None,
+            "season": season.split(',') if season else None,
+            "temperature_range": {"min": temperature_min, "max": temperature_max} if temperature_min is not None and temperature_max is not None else None,
+            "gender": gender,
+            "material": material,
+            "pattern": pattern
+        }
         file_data = (contents, file.filename, file.filename)
-        result = process_single_image(file_data)
+        result = process_single_image(file_data, extra_metadata=extra_metadata)
         
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
@@ -907,27 +948,35 @@ async def upload_single_image(
                 INSERT INTO images (
                     id, filename, original_name, file_size, image_width, image_height,
                     dominant_color, color_palette, resnet_features, opencv_features, 
-                    upload_date, batch_id, category, background_removed, foreground_pixel_count
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    upload_date, batch_id, category, background_removed, foreground_pixel_count,
+                    style, occasion, season, temperature_range, gender, material, pattern
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
             
             values = (
-            metadata["id"],
-            metadata["filename"],
-            metadata["original_name"],
-            metadata["file_size"],
-            metadata["image_width"],
-            metadata["image_height"],
-            metadata["dominant_color"],
-            json.dumps(metadata["color_palette"]),
-            json.dumps(metadata["resnet_features"]),
-            json.dumps(metadata["opencv_features"]),
-            datetime.now(),
-            metadata["batch_id"],
-            metadata["category"],
-            metadata.get("background_removed", False),
-            metadata.get("foreground_pixel_count", 0)
-        )
+                metadata["id"],
+                metadata["filename"],
+                metadata["original_name"],
+                metadata["file_size"],
+                metadata["image_width"],
+                metadata["image_height"],
+                metadata["dominant_color"],
+                json.dumps(metadata["color_palette"]),
+                json.dumps(metadata["resnet_features"]),
+                json.dumps(metadata["opencv_features"]),
+                datetime.now(),
+                metadata["batch_id"],
+                metadata["category"],
+                metadata.get("background_removed", False),
+                metadata.get("foreground_pixel_count", 0),
+                metadata.get("style"),
+                json.dumps(metadata.get("occasion")),
+                json.dumps(metadata.get("season")),
+                json.dumps(metadata.get("temperature_range")),
+                metadata.get("gender"),
+                metadata.get("material"),
+                metadata.get("pattern"),
+            )
                     
             cursor.execute(insert_query, values)
             connection.commit()
@@ -1034,7 +1083,7 @@ def recommend_similar(image_id: str, top_k: int = 5):
 @app.post("/api/upload-images/", response_model=BatchUploadResponse)
 async def upload_multiple_images(
     files: List[UploadFile] = File(...),
-    description: Optional[str] = Form(None)
+    metadatas: Optional[str] = Form(None) # Expecting a JSON string
 ):
     """Upload and process multiple images (1-20 images)"""
     start_time = datetime.now()
@@ -1067,12 +1116,16 @@ async def upload_multiple_images(
         # Process images in parallel
         logger.info(f"Processing {len(file_data_list)} images in batch {batch_id}")
         
+        # Parse metadatas if provided
+        metadata_list = json.loads(metadatas) if metadatas else [{}] * len(files)
+
         # Use ThreadPoolExecutor for parallel processing
         loop = asyncio.get_event_loop()
         processing_tasks = []
         
-        for file_data in file_data_list:
-            task = loop.run_in_executor(executor, process_single_image, file_data, batch_id)
+        for i, file_data in enumerate(file_data_list):
+            extra_metadata = metadata_list[i] if i < len(metadata_list) else {}
+            task = loop.run_in_executor(executor, process_single_image, file_data, batch_id, extra_metadata)
             processing_tasks.append(task)
         
         # Wait for all processing to complete
@@ -1093,8 +1146,9 @@ async def upload_multiple_images(
                 insert_query = """
                 INSERT INTO images (
                     id, filename, original_name, file_size, image_width, image_height,
-                    dominant_color, color_palette, resnet_features, opencv_features, upload_date, batch_id, category
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    dominant_color, color_palette, resnet_features, opencv_features, upload_date, batch_id, category,
+                    style, occasion, season, temperature_range, gender, material, pattern
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 
                 values_list = []
@@ -1113,7 +1167,14 @@ async def upload_multiple_images(
                         json.dumps(metadata["opencv_features"]),
                         datetime.now(),
                         batch_id,
-                        metadata["category"]
+                        metadata["category"],
+                        metadata.get("style"),
+                        json.dumps(metadata.get("occasion")),
+                        json.dumps(metadata.get("season")),
+                        json.dumps(metadata.get("temperature_range")),
+                        metadata.get("gender"),
+                        metadata.get("material"),
+                        metadata.get("pattern"),
                     )
                     values_list.append(values)
                 

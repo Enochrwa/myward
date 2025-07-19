@@ -5,37 +5,102 @@ import {
   Shirt, 
   Calendar, 
   TrendingUp, 
-  Heart, 
   Sparkles, 
   Eye,
-  Plus,
-  Target,
-  Award,
-  Zap,
-  Clock,
-  Users,
-  Star,
-  ShoppingBag,
-  Palette,
-  Sun,
-  Cloud,
-  Snowflake,
   Upload,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import CategorizedWardrobe from './CategorizedWardrobe';
 import ClotheAnalytics from './ClotheAnalytics';
-import * as apiClient from '@/lib/apiClient';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+
+const controlledVocabularies = {
+  style: [
+    "Smart Casual", "Business Casual", "Formal", "Black Tie", "Sporty", "Athleisure",
+    "Vintage", "Bohemian", "Minimalist", "Streetwear", "Preppy", "Punk",
+    "Grunge", "Gothic", "Y2K", "Avant-Garde", "Artsy", "Loungewear", "Workwear"
+  ],
+  occasion: [
+    "Business", "Everyday", "Work", "Interview", "Wedding", "Party", "Formal Event",
+    "Casual Date", "Outdoor", "Travel", "Vacation", "Festival", "Religious Ceremony",
+    "Fitness", "Beach", "Club", "Concert", "Dinner", "Homewear","Church",
+  ],
+  season: [
+    "Spring", "Summer", "Autumn", "Winter", "All Season", "Rainy Season", "Transitional"
+  ],
+  gender: [
+    "Male", "Female", "Unisex", "Non-Binary", "Genderfluid"
+  ],
+  pattern: [
+    "Solid", "Striped", "Plaid", "Floral", "Polka Dot", "Houndstooth", "Geometric",
+    "Animal Print", "Camouflage", "Tie-Dye", "Abstract", "Paisley", "Checkered", "Chevron"
+  ],
+  material: [
+    "Cotton", "Wool", "Polyester", "Silk", "Linen", "Denim", "Leather", "Suede",
+    "Velvet", "Satin", "Nylon", "Rayon", "Acrylic", "Spandex", "Bamboo", "Cashmere",
+    "Jersey", "Corduroy", "Tweed", "Chiffon"
+  ],
+  color: [
+    "Black", "White", "Grey", "Beige", "Brown", "Navy", "Blue", "Sky Blue", "Teal", "Green",
+    "Olive", "Mint", "Yellow", "Mustard", "Orange", "Coral", "Red", "Burgundy", "Pink",
+    "Blush", "Purple", "Lavender", "Violet", "Gold", "Silver", "Bronze", "Multicolor"
+  ],
+  fit: [
+    "Slim Fit", "Regular Fit", "Relaxed Fit", "Oversized", "Tailored", "Loose Fit", "Skinny Fit",
+    "Bodycon", "Boxy"
+  ],
+  length: [
+    "Crop", "Hip Length", "Waist Length", "Knee Length", "Midi", "Maxi", "Ankle Length",
+    "Full Length", "Short", "Above Knee"
+  ],
+  sleeveType: [
+    "Sleeveless", "Cap Sleeve", "Short Sleeve", "3/4 Sleeve", "Long Sleeve",
+    "Bell Sleeve", "Bishop Sleeve", "Puff Sleeve", "Raglan Sleeve", "Dolman Sleeve",
+    "Kimono Sleeve"
+  ],
+  neckline: [
+    "Crew Neck", "V-Neck", "Round Neck", "Square Neck", "Scoop Neck", "Halter Neck",
+    "Off-Shoulder", "Boat Neck", "Turtleneck", "Cowl Neck", "Sweetheart", "Keyhole"
+  ],
+  accessoryType: [
+    "Hat", "Scarf", "Belt", "Gloves", "Watch", "Bracelet", "Necklace", "Earrings",
+    "Rings", "Brooch", "Bag", "Wallet", "Sunglasses", "Hair Accessories", "Tie",
+    "Bow Tie", "Suspenders"
+  ],
+  footwearType: [
+    "Sneakers", "Sandals", "Loafers", "Oxfords", "Derby", "Brogues", "Boots",
+    "Chelsea Boots", "Chukka Boots", "Hiking Boots", "Heels", "Pumps", "Stilettos",
+    "Flats", "Ballet Flats", "Mules", "Clogs", "Espadrilles", "Flip-Flops", "Slides",
+    "Wedges"
+  ]
+};
+
+
+interface ImageMetadata {
+  style: string;
+  occasion: string[];
+  season: string[];
+  temperature_range: { min: number; max: number };
+  gender: string;
+  material: string;
+  pattern: string;
+}
 
 const Dashboard = () => {
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [uploading, setUploading] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ total: number; completed: number; failed: number } | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [metadata, setMetadata] = useState<ImageMetadata[]>([]);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -52,22 +117,47 @@ const Dashboard = () => {
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      await uploadImages(files);
+      const fileList = Array.from(files);
+      setSelectedFiles(fileList);
+      setMetadata(fileList.map(() => ({
+        style: '',
+        occasion: [],
+        season: [],
+        temperature_range: { min: 0, max: 30 },
+        gender: '',
+        material: '',
+        pattern: ''
+      })));
+      setActiveImageIndex(0);
+      setIsModalOpen(true);
     }
   };
 
-  const uploadImages = async (files: FileList) => {
+  const handleMetadataChange = (index: number, field: keyof ImageMetadata, value: any) => {
+    const newMetadata = [...metadata];
+    newMetadata[index] = { ...newMetadata[index], [field]: value };
+    setMetadata(newMetadata);
+  };
+  
+  const applyToAll = (field: keyof ImageMetadata, value: any) => {
+    const newMetadata = metadata.map(meta => ({ ...meta, [field]: value }));
+    setMetadata(newMetadata);
+  };
+
+  const uploadImages = async () => {
+    setIsModalOpen(false);
     setUploading(true);
     setBatchProgress({
-      total: files.length,
+      total: selectedFiles.length,
       completed: 0,
       failed: 0
     });
 
     const formData = new FormData();
-    Array.from(files).forEach(file => {
+    selectedFiles.forEach(file => {
       formData.append('files', file);
     });
+    formData.append('metadatas', JSON.stringify(metadata));
 
     try {
       const response = await fetch(`http://localhost:8000/api/upload-images/`, {
@@ -82,14 +172,7 @@ const Dashboard = () => {
           completed: data.successful_uploads,
           failed: data.failed_uploads
         });
-        // Refresh the categorized wardrobe view by re-fetching
-        // This is a simple way to trigger a re-render of the child component
-        // A more robust solution might involve a shared state or context
-        // window.location.reload(); 
         navigate("/wardrobe");
-      
-
-
       } else {
         console.error('Batch upload failed:', response.statusText);
       }
@@ -98,6 +181,8 @@ const Dashboard = () => {
     } finally {
       setUploading(false);
       setTimeout(() => setBatchProgress(null), 5000);
+      setSelectedFiles([]);
+      setMetadata([]);
     }
   };
 
@@ -254,7 +339,109 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
-    </div>
+
+      {/* Metadata Editing Modal */}
+      {/* Metadata Editing Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-4xl h-4/5 pb-5 flex flex-col bg-gray-900 text-white border-gray-700">
+          <DialogHeader>
+            <DialogTitle>Edit Clothing Details</DialogTitle>
+            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </DialogClose>
+          </DialogHeader>
+
+          <div className="flex-grow overflow-hidden grid grid-cols-3 gap-6">
+            {/* Image Preview Column */}
+            <div className="col-span-1 flex flex-col gap-4">
+              <div className="w-full aspect-square rounded-lg overflow-hidden bg-gray-800">
+                {selectedFiles[activeImageIndex] && (
+                  <img
+                    src={URL.createObjectURL(selectedFiles[activeImageIndex])}
+                    alt={`Preview ${activeImageIndex + 1}`}
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
+              <div className="flex-shrink-0 grid grid-cols-4 gap-2">
+                {selectedFiles.map((file, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setActiveImageIndex(index)}
+                    className={`aspect-square rounded-md overflow-hidden transition-all ${
+                      activeImageIndex === index ? 'ring-2 ring-blue-500' : 'hover:opacity-80'
+                    }`}
+                  >
+                    <img src={URL.createObjectURL(file)} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Metadata Form Column */}
+            <div className="col-span-2 overflow-y-auto pr-4">
+              {metadata[activeImageIndex] && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(controlledVocabularies).map(([key, options]) => (
+                      <div key={key}>
+                        <label className="block text-sm font-medium text-gray-300 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
+                        <Select
+                          value={metadata[activeImageIndex][key as keyof ImageMetadata] as string}
+                          onValueChange={(value) => handleMetadataChange(activeImageIndex, key as keyof ImageMetadata, value)}
+                        >
+                          <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                            <SelectValue placeholder={`Select ${key}`} />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-800 border-gray-600 text-white">
+                            {options.map(option => (
+                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button variant="link" size="sm" onClick={() => applyToAll(key as keyof ImageMetadata, metadata[activeImageIndex][key as keyof ImageMetadata])} className="text-blue-400">
+                          Apply to all
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">Temperature Range (°C)</label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Min"
+                        value={metadata[activeImageIndex].temperature_range.min}
+                        onChange={(e) => handleMetadataChange(activeImageIndex, 'temperature_range', { ...metadata[activeImageIndex].temperature_range, min: parseInt(e.target.value) || 0 })}
+                        className="bg-gray-800 border-gray-600 text-white"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Max"
+                        value={metadata[activeImageIndex].temperature_range.max}
+                        onChange={(e) => handleMetadataChange(activeImageIndex, 'temperature_range', { ...metadata[activeImageIndex].temperature_range, max: parseInt(e.target.value) || 0 })}
+                        className="bg-gray-800 border-gray-600 text-white"
+                      />
+                      <Button variant="link" size="sm" onClick={() => applyToAll('temperature_range', metadata[activeImageIndex].temperature_range)} className="text-blue-400">
+                        Apply to all
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="border-t border-gray-700 pt-4">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="text-white border-gray-600 hover:bg-gray-700">Cancel</Button>
+            <Button onClick={uploadImages} className="bg-blue-600 hover:bg-blue-700">Upload {selectedFiles.length} items</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+          </div>
   );
 };
 

@@ -91,6 +91,8 @@ export const Registration: React.FC<RegistrationProps> = ({ switchToLogin }) => 
     });
 
     await register(formData);
+    window.location.reload()
+
   };
 
   const handleBMISave = (calculatedBMI: number, calculatedHeight: string, calculatedWeight: string) => {

@@ -19,6 +19,7 @@ export const Login: React.FC<LoginProps> = ({ switchToRegister }) => {
     if(username && password){
       await login({ username, password });
     }
+    window.location.reload()
   };
 
   return (
