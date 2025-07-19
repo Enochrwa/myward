@@ -36,8 +36,8 @@ import tensorflow as tf
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-from app.db import database
-from app.db.database import Base
+from app.db import database 
+from app.db.database import Base, get_database_connection
 from app import models # Assuming models.py is in backend/app/
 
 from utils.color_utils import (
@@ -64,6 +64,15 @@ from app.routes import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+MYSQL_CONFIG = {
+    'host': 'localhost',
+    'database': 'image_processing',
+    'user': 'enoch',
+    'password': 'enoch',  # Change this to your MySQL password
+    'port': 3306
+}
+
 Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(
@@ -80,14 +89,7 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB per file
 MAX_FILES_PER_REQUEST = 20
 MIN_FILES_PER_REQUEST = 1
 
-# MySQL Configuration
-MYSQL_CONFIG = {
-    'host': 'localhost',
-    'database': 'image_processing',
-    'user': 'enoch',
-    'password': 'enoch',  # Change this to your MySQL password
-    'port': 3306
-}
+
 
 # Create directories
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -218,6 +220,7 @@ def init_database():
             image_height INT,
             opencv_features JSON,
             batch_id VARCHAR(36),
+            user_id INT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_batch_id (batch_id),
             INDEX idx_upload_date (upload_date),
@@ -600,14 +603,6 @@ def extract_color_features_original(image_path):
             "foreground_pixel_count": 0
         }
 
-def get_database_connection():
-    """Get MySQL database connection"""
-    try:
-        connection = mysql.connector.connect(**MYSQL_CONFIG)
-        return connection
-    except Error as e:
-        logger.error(f"Error connecting to database: {str(e)}")
-        raise HTTPException(status_code=500, detail="Database connection failed")
 
 # Image processing functions
 def extract_resnet_features(image_path):
@@ -866,6 +861,7 @@ def process_single_image(file_data, batch_id=None, extra_metadata=None):
             "gender": extra_metadata.get("gender"),
             "material": extra_metadata.get("material"),
             "pattern": extra_metadata.get("pattern"),
+            "user_id": extra_metadata.get("user_id")
         }
         
         return {
@@ -908,7 +904,8 @@ async def upload_single_image(
     temperature_max: Optional[int] = Form(None),
     gender: Optional[str] = Form(None),
     material: Optional[str] = Form(None),
-    pattern: Optional[str] = Form(None)
+    pattern: Optional[str] = Form(None),
+    user_id: Optional[int] = Form(None)
 ):
     """Upload and process a single image (legacy endpoint)"""
     try:
@@ -929,7 +926,8 @@ async def upload_single_image(
             "temperature_range": {"min": temperature_min, "max": temperature_max} if temperature_min is not None and temperature_max is not None else None,
             "gender": gender,
             "material": material,
-            "pattern": pattern
+            "pattern": pattern,
+            "user_id": user_id
         }
         file_data = (contents, file.filename, file.filename)
         result = process_single_image(file_data, extra_metadata=extra_metadata)
@@ -949,8 +947,8 @@ async def upload_single_image(
                     id, filename, original_name, file_size, image_width, image_height,
                     dominant_color, color_palette, resnet_features, opencv_features, 
                     upload_date, batch_id, category, background_removed, foreground_pixel_count,
-                    style, occasion, season, temperature_range, gender, material, pattern
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    style, occasion, season, temperature_range, gender, material, pattern, user_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
             
             values = (
@@ -976,6 +974,7 @@ async def upload_single_image(
                 metadata.get("gender"),
                 metadata.get("material"),
                 metadata.get("pattern"),
+                metadata.get("user_id")
             )
                     
             cursor.execute(insert_query, values)
@@ -1083,7 +1082,8 @@ def recommend_similar(image_id: str, top_k: int = 5):
 @app.post("/api/upload-images/", response_model=BatchUploadResponse)
 async def upload_multiple_images(
     files: List[UploadFile] = File(...),
-    metadatas: Optional[str] = Form(None) # Expecting a JSON string
+    metadatas: Optional[str] = Form(None), # Expecting a JSON string
+    user_id: Optional[int] = Form(None)
 ):
     """Upload and process multiple images (1-20 images)"""
     start_time = datetime.now()
@@ -1125,6 +1125,7 @@ async def upload_multiple_images(
         
         for i, file_data in enumerate(file_data_list):
             extra_metadata = metadata_list[i] if i < len(metadata_list) else {}
+            extra_metadata['user_id'] = user_id
             task = loop.run_in_executor(executor, process_single_image, file_data, batch_id, extra_metadata)
             processing_tasks.append(task)
         
@@ -1147,8 +1148,8 @@ async def upload_multiple_images(
                 INSERT INTO images (
                     id, filename, original_name, file_size, image_width, image_height,
                     dominant_color, color_palette, resnet_features, opencv_features, upload_date, batch_id, category,
-                    style, occasion, season, temperature_range, gender, material, pattern
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    style, occasion, season, temperature_range, gender, material, pattern, user_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 
                 values_list = []
@@ -1175,6 +1176,7 @@ async def upload_multiple_images(
                         metadata.get("gender"),
                         metadata.get("material"),
                         metadata.get("pattern"),
+                        metadata.get("user_id")
                     )
                     values_list.append(values)
                 
@@ -1343,11 +1345,14 @@ async def get_images(
     try:
         connection = get_database_connection()
         cursor = connection.cursor(dictionary=True)
+                    
         
         if batch_id:
             query = """
             SELECT id, filename, original_name, file_size, image_width, image_height,
-                   dominant_color, color_palette, upload_date, batch_id, category, created_at
+                   dominant_color, color_palette, upload_date, batch_id, category, 
+                   style, occasion, season, temperature_range, gender, material, pattern,
+                   created_at
             FROM images
             WHERE batch_id = %s
             ORDER BY created_at DESC
@@ -1357,7 +1362,9 @@ async def get_images(
         else:
             query = """
             SELECT id, filename, original_name, file_size, image_width, image_height,
-                   dominant_color, color_palette, upload_date, batch_id, category, created_at
+                   dominant_color, color_palette, upload_date, batch_id, 
+                   style, occasion, season, temperature_range, gender, material, pattern,
+                   category, created_at
             FROM images
             ORDER BY created_at DESC
             LIMIT %s OFFSET %s

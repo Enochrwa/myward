@@ -6,6 +6,7 @@ import * as apiClient from '@/lib/apiClient';
 import axios from 'axios';
 import LoadingSpinner from '@/components/ui/loading';
 
+
 // Define the actual data structure based on your API response
 interface ImageItem {
     id: string;
@@ -198,6 +199,8 @@ const CategorizedWardrobe = () => {
                     <p className="text-sm md:text-base">Your wardrobe is empty. Start by adding some items!</p>
                 </div>
             )}
+
+        
         </div>
     );
 };

@@ -3,6 +3,11 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
+import logging
+from fastapi import HTTPException
+
+import mysql.connector
+from mysql.connector import Error
 
 from ..model import  (User,
 ClothingCategory,
@@ -21,7 +26,29 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Declare the Base
+
+# MySQL Configuration
+MYSQL_CONFIG = {
+    'host': 'localhost',
+    'database': 'image_processing',
+    'user': 'enoch',
+    'password': 'enoch',  # Change this to your MySQL password
+    'port': 3306
+}
+
+def get_database_connection():
+    """Get MySQL database connection"""
+    try:
+        connection = mysql.connector.connect(**MYSQL_CONFIG)
+        return connection
+    except Error as e:
+        logger.error(f"Error connecting to database: {str(e)}")
+        raise HTTPException(status_code=500, detail="Database connection failed")
 
 
 def create_mysql_database_if_not_exists():

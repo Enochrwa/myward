@@ -18,7 +18,7 @@ import AIStudioPage from './pages/AIStudioPage';
 import ImageGallery from "./components/ImageGallery"
 import axios from 'axios'
 import ClotheClassifier from './components/ClotheClassifier';
-
+import OutfitRecommendations from './components/test/OutfitRecommendations';
 function App() {
 
 
@@ -34,7 +34,7 @@ function App() {
               <Route path="/" element={<IndexPage />}/>
               <Route path='/classifier' element={<ClotheClassifier/>} />
               <Route path="/upload" element={<UploadForm />} />
-              <Route path="/gallery" element={<ImageGallery />} />
+              <Route path="/gallery" element={<OutfitRecommendations/>} />
               <Route path='/recommendations' element={<RenderRecommendations/>}/>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/wardrobe" element={<WardrobePage />} />

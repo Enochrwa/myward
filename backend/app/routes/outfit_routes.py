@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, func
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
-
+import random
 import json
 
 # Import your models and database session
@@ -17,12 +17,100 @@ from ..model import (
     User,ClothingAttribute, WardrobeItem, Outfit,
     StyleHistory
 )
-from ..db.database import get_db
+from ..db.database import get_db, get_database_connection
 from ..tables import OutfitResponse, OutfitCreate, OutfitUpdate, OutfitAnalysisResponse
 from ..security import get_current_user
 
 
 router = APIRouter(prefix="/outfit")
+
+
+
+
+
+def build_image_url(filename: str) -> str:
+    BASE_URL = "http://127.0.0.1:8000/uploads/"
+    return BASE_URL + filename if filename else None
+
+
+def clean_item(item: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Exclude resnet_features, opencv_features and ensure season/occasion are lists.
+    """
+    item.pop('resnet_features', None)
+    item.pop('opencv_features', None)
+
+    # Normalize season and occasion fields to always be lists
+    season = item.get('season')
+    occasion = item.get('occasion')
+
+    try:
+        item['season'] = json.loads(season) if season else []
+    except json.JSONDecodeError:
+        item['season'] = [season] if season else []
+
+    try:
+        item['occasion'] = json.loads(occasion) if occasion else []
+    except json.JSONDecodeError:
+        item['occasion'] = [occasion] if occasion else []
+
+    item['image_url'] = build_image_url(item['filename'])
+    return item
+
+
+def fetch_items(cursor, category: str, gender: str, season: List[str], occasion: List[str]):
+    query = """
+        SELECT * FROM images
+        WHERE category = %s AND gender = %s
+    """
+    cursor.execute(query, (category, gender))
+    rows = cursor.fetchall()
+
+    filtered = []
+    for row in rows:
+        cleaned = clean_item(row)
+        if any(s in season for s in cleaned['season']) and any(o in occasion for o in cleaned['occasion']):
+            filtered.append(cleaned)
+
+    return filtered
+
+
+@router.get("/recommend/{image_id}")
+def recommend_outfit(image_id: str):
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # Fetch query image metadata
+    cursor.execute("SELECT * FROM images WHERE id = %s", (image_id,))
+    base_item = cursor.fetchone()
+    if not base_item:
+        raise HTTPException(status_code=404, detail="Image not found.")
+
+    base_item = clean_item(base_item)
+    gender = base_item['gender']
+    season = base_item['season']
+    occasion = base_item['occasion']
+
+    categories_to_fetch = ["shirt", "jacket", "trousers", "shoes", "bag"]
+    base_category = base_item['category']
+    if base_category in categories_to_fetch:
+        categories_to_fetch.remove(base_category)
+
+    outfit = {base_category: base_item}
+
+    for cat in categories_to_fetch:
+        candidates = fetch_items(cursor, cat, gender, season, occasion)
+        if candidates:
+            outfit[cat] = random.choice(candidates)
+
+    return {
+        "query_image_id": image_id,
+        "base_category": base_category,
+        "outfit": outfit
+    }
+
+##EDIT
+
 
 
 
