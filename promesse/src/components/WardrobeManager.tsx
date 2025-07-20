@@ -43,7 +43,7 @@ const WardrobeManager = () => {
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
 
     // Modals states
-    const [isCreateOutfitOpen, setIsCreateOutfitOpen] = useState(false);
+    // const [isCreateOutfitOpen, setIsCreateOutfitOpen] = useState(false);
     const [isPlanWeekOpen, setIsPlanWeekOpen] = useState(false);
     const [showSavedPlans, setShowSavedPlans] = useState(false);
     const [isOccasionPlannerOpen, setIsOccasionPlannerOpen] = useState(false);
@@ -297,9 +297,9 @@ const WardrobeManager = () => {
                     <Plus size={16} className="mr-2" /> Add Item
                   </Link>
               </Button>
-              <Button onClick={() => setIsCreateOutfitOpen(true)} variant="outline" className="flex-1 sm:flex-none border-owis-forest text-owis-forest hover:bg-owis-forest hover:text-white">
+              {/* <Button onClick={() => setIsCreateOutfitOpen(true)} variant="outline" className="flex-1 sm:flex-none border-owis-forest text-owis-forest hover:bg-owis-forest hover:text-white">
                 <Star size={16} className="mr-2" /> Create Outfit
-              </Button>
+              </Button> */}
               <Button
                 onClick={async () => {
                   try {
@@ -404,7 +404,7 @@ const WardrobeManager = () => {
 
       <AddItemModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSaveItem} />
       {editingItem && <EditItemModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} item={editingItem} onUpdate={(id, data, file) => handleUpdateItem(id, data, file)} />}
-      <CreateOutfitModal isOpen={isCreateOutfitOpen} onClose={() => setIsCreateOutfitOpen(false)} onSave={handleSaveOutfit} items={items} />
+      {/* <CreateOutfitModal isOpen={isCreateOutfitOpen} onClose={() => setIsCreateOutfitOpen(false)} onSave={handleSaveOutfit} items={items} /> */}
     </div>
   );
 };
