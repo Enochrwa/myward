@@ -7,12 +7,10 @@ import json
 import numpy as np
 import uuid
 from PIL import Image
-import io
 from ..db.database import get_database_connection
 from ..utils.constants import CATEGORY_PART_MAPPING, CLOTHING_PARTS, OUTFIT_RULES
 from ..utils.cluster import main as run_clustering
 from ..services.outfit_creation_service import SmartOutfitCreator
-
 
 router = APIRouter(prefix="/outfit")
 
@@ -34,15 +32,6 @@ def clean_item(item: Dict[str, Any]) -> Dict[str, Any]:
 
     item['image_url'] = build_image_url(item['filename'])
     return item
-
-
-def fetch_items_with_features(cursor, category: str, gender: str, cluster_id: int) -> List[Dict[str, Any]]:
-    query = """
-        SELECT * FROM images
-        WHERE category = %s AND gender = %s AND cluster_id = %s
-    """
-    cursor.execute(query, (category, gender, cluster_id))
-    return cursor.fetchall()
 
 
 @router.get("/recommend/{image_id}")
@@ -71,7 +60,11 @@ def recommend_outfit(image_id: str):
 
     for part in recommended_parts:
         for category in CLOTHING_PARTS.get(part, []):
-            candidates = fetch_items_with_features(cursor, category, gender, base_cluster_id)
+            cursor.execute("""
+                SELECT * FROM images 
+                WHERE category = %s AND gender = %s AND cluster_id = %s
+            """, (category, gender, base_cluster_id))
+            candidates = cursor.fetchall()
             if not candidates:
                 continue
             
@@ -114,7 +107,7 @@ def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
     connection = get_database_connection()
     cursor = connection.cursor(dictionary=True)
 
-    # Image composition
+    # Stitch preview image
     images_to_stitch = []
     for item_id in outfit.get("clothing_items", []):
         cursor.execute("SELECT filename FROM images WHERE id = %s", (item_id,))
@@ -173,6 +166,19 @@ def get_user_outfits(user_id: str):
         outfit['preview_image_url'] = build_image_url(outfit['preview_image'])
 
     return outfits
+
+
+@router.get("/user-clothes")
+def get_user_images():
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM images"
+    cursor.execute(query)
+    images = cursor.fetchall()
+    for item in images:
+        item['image_url'] = build_image_url(item['filename'])
+    return images
+
 
 
 @router.post("/cluster")

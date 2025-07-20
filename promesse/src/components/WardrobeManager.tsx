@@ -25,6 +25,7 @@ import SimilarItemsFinderComponent from './SimilarItemsFinderComponent';
 import { WardrobeItemResponse, WardrobeItemCreate, WardrobeItemUpdate, Outfit } from '@/lib/apiClient';
 import SingleGridWardrobe from './CategorizedWardrobe';
 import OutfitBuilder from './OutfitBuilder';
+import SmartOutFits from '@/components/SmartOutFits';
 
 const WardrobeManager = () => {
     // const { token } = useAuth();
@@ -388,66 +389,7 @@ const WardrobeManager = () => {
             {/* Other Tabs Content */}
             {/* <TabsContent value="ml-analysis"><MLAnalysisComponent onAnalysisComplete={() => {}} /></TabsContent> */}
             <TabsContent value="recommendations">
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5" />
-                      Smart Outfit Recommendations
-                    </CardTitle>
-                    <CardDescription>
-                      Let our AI create a stylish outfit from your wardrobe.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button onClick={generateOutfit} disabled={isLoading || items.length === 0}>
-                      <Shuffle className="mr-2 h-4 w-4" />
-                      {isLoading ? 'Generating...' : 'Generate New Outfit'}
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {isLoading && (
-                  <div className="flex justify-center py-8">
-                    <LoadingSpinner />
-                  </div>
-                )}
-
-                {!isLoading && !error && outfit && renderOutfit()}
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Saved Outfits</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {savedOutfits.map((savedOutfit) => (
-                      <Card key={savedOutfit.id}>
-                        <CardContent className="p-0">
-                          <img src={savedOutfit.preview_image} alt={savedOutfit.name} className="w-full h-48 object-cover rounded-t-lg" />
-                          <div className="p-4">
-                            <h5 className="font-semibold">{savedOutfit.name}</h5>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteOutfit(savedOutfit.id)}
-                              className="mt-2"
-                            >
-                              <Trash2 size={16} className="mr-2" />
-                              Delete
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </CardContent>
-                </Card>
-              </div>
+              <SmartOutFits/>
             </TabsContent>
             {/* <TabsContent value="outfit-builder">
               <OutfitBuilder items={items} onSave={handleSaveOutfit} />
