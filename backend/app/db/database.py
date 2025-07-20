@@ -85,6 +85,7 @@ def init_clothes_database():
             upload_date DATETIME NOT NULL,
             background_removed BOOLEAN DEFAULT FALSE,
             foreground_pixel_count INT DEFAULT 0,
+            cluster_id INT,
             resnet_features JSON,
             file_size INT,
             image_width INT,
@@ -109,6 +110,17 @@ def init_clothes_database():
         except Error as e:
             if "Duplicate column name" in str(e):
                 pass  # Column already exists
+            else:
+                raise
+        
+        # Add cluster_id column if it doesn't exist
+        try:
+            cursor.execute("ALTER TABLE images ADD COLUMN cluster_id INT")
+            connection.commit()
+            logger.info("Added 'cluster_id' column to 'images' table.")
+        except Error as e:
+            if "Duplicate column name" in str(e):
+                pass
             else:
                 raise
         

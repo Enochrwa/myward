@@ -249,7 +249,7 @@ const Dashboard = () => {
               <div className="space-y-4">
                 <Loader2 className="w-12 h-12 text-blue-600 mx-auto animate-spin" />
                 <p className="text-lg text-gray-600">
-                  Processing {batchProgress?.completed || 0} of {batchProgress?.total || 0} images
+                  Processing {batchProgress?.completed || 0} of {batchProgress?.total || 0} clothes
                 </p>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div
