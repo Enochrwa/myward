@@ -394,6 +394,12 @@ export const getSimilarItems = async (
   });
 };
 
+export const clusterImages = async (): Promise<any> => {
+  return apiClient('/outfit/cluster', {
+    method: 'POST'
+  });
+};
+
 export const saveOutfit = async (
   outfitData: any
 ): Promise<any> => {

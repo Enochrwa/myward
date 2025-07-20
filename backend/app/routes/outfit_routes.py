@@ -8,6 +8,7 @@ from PIL import Image
 import io
 from ..db.database import get_database_connection
 from ..utils.constants import CATEGORY_PART_MAPPING, CLOTHING_PARTS, OUTFIT_RULES
+from ..utils.cluster import main as run_clustering
 
 
 router = APIRouter(prefix="/outfit")
@@ -167,6 +168,15 @@ def get_user_outfits(user_id: str):
     outfits = cursor.fetchall()
 
     return outfits
+
+
+@router.post("/cluster")
+def cluster_images():
+    try:
+        run_clustering()
+        return {"message": "Clustering process started successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{outfit_id}")

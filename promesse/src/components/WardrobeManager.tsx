@@ -296,6 +296,20 @@ const WardrobeManager = () => {
               <Button onClick={() => {}} variant="outline" className="flex-1 sm:flex-none border-owis-forest text-owis-forest hover:bg-owis-forest hover:text-white">
                 <Star size={16} className="mr-2" /> Create Outfit
               </Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    await apiClient.clusterImages();
+                    toast({ title: 'Success', description: 'Clustering process started.' });
+                  } catch (err: any) {
+                    toast({ title: 'Error', description: 'Could not start clustering.', variant: 'destructive' });
+                  }
+                }}
+                variant="outline"
+                className="flex-1 sm:flex-none border-owis-forest text-owis-forest hover:bg-owis-forest hover:text-white"
+              >
+                <Sparkles size={16} className="mr-2" /> Cluster Items
+              </Button>
             </div>
           </div>
 
