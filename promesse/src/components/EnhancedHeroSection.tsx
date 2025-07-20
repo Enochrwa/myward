@@ -134,21 +134,24 @@ const QuickActionsSection = () => {
       title: "Snap & Style",
       description: "Take photos of your clothes and get instant outfit suggestions",
       action: "Try Now",
-      gradient: "from-pink-500 to-rose-500"
+      gradient: "from-pink-500 to-rose-500",
+      link:"/dashboard"
     },
     {
       icon: Shirt,
       title: "Virtual Wardrobe",
       description: "Organize your entire wardrobe digitally with smart categorization",
       action: "Explore",
-      gradient: "from-blue-500 to-indigo-500"
+      gradient: "from-blue-500 to-indigo-500",
+      link:"/wardrobe"
     },
     {
       icon: Clock,
       title: "Quick Outfits",
       description: "Get ready in seconds with pre-planned outfit combinations",
       action: "View All",
-      gradient: "from-emerald-500 to-teal-500"
+      gradient: "from-emerald-500 to-teal-500",
+      link:"/wardrobe"
     }
   ];
 
@@ -182,10 +185,12 @@ const QuickActionsSection = () => {
                 {action.description}
               </p>
 
-              <button className="flex items-center text-teal-400 hover:text-teal-300 font-semibold transition-colors group">
+              <Link to={action?.link}>
+                  <button className="flex items-center text-teal-400 hover:text-teal-300 font-semibold transition-colors group">
                 {action.action}
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
+              </Link>
             </div>
           ))}
         </div>

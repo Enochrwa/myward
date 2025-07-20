@@ -15,6 +15,7 @@ import Header from './components/Header';
 import UploadForm from './components/UploadForm';
 import RenderRecommendations from './components/Recommendations';
 import AIStudioPage from './pages/AIStudioPage';
+import OutfitBuilderPage from "./pages/OutfitBuilderPage"
 import ImageGallery from "./components/ImageGallery"
 import axios from 'axios'
 import ClotheClassifier from './components/ClotheClassifier';
@@ -32,6 +33,7 @@ function App() {
           <main className="pt-16">
             <Routes>
               <Route path="/" element={<IndexPage />}/>
+              <Route path="/outfit-builder/:imageId" element={<OutfitBuilderPage />} />
               <Route path='/classifier' element={<ClotheClassifier/>} />
               <Route path="/upload" element={<UploadForm />} />
               <Route path="/gallery" element={<OutfitRecommendations/>} />

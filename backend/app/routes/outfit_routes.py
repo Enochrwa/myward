@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 import json
 import numpy as np
 import random
+import uuid
 from ..db.database import get_database_connection
 
 router = APIRouter(prefix="/outfit")
@@ -119,7 +120,7 @@ def recommend_outfit(image_id: str):
             outfit[category] = clean_item(items[sorted_indices[0]])
 
     # Save the outfit
-    outfit_id = str(random.randint(100000, 999999))
+    outfit_id = str(uuid.uuid4())
     user_id = "123" # TODO: get from auth
     clothing_parts = {}
     clothing_items = []
@@ -160,7 +161,7 @@ import io
 def save_custom_outfit(outfit: dict):
     # TODO: get user_id from auth token
     user_id = "123"
-    outfit_id = str(random.randint(100000, 999999))
+    outfit_id = str(uuid.uuid4())
     
     connection = get_database_connection()
     cursor = connection.cursor(dictionary=True)
