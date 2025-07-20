@@ -101,7 +101,7 @@ def recommend_outfit(image_id: str):
 
 @router.post("/custom")
 def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
-    user_id = user.id
+    user_id = user['id']
     outfit_id = str(uuid.uuid4())
     
     connection = get_database_connection()
@@ -133,9 +133,8 @@ def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
         preview_image_filename = None
 
     query = """
-        INSERT INTO outfits (id, user_id, name, gender, clothing_parts, clothing_items, preview_image,
-                               score, description, is_favorite, dominant_colors, styles, occasions)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO outfits (id, user_id, name, gender, clothing_parts, clothing_items, preview_image)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
     
     values = (
@@ -145,13 +144,7 @@ def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
         outfit.get("gender"),
         json.dumps(outfit.get("clothing_parts")),
         json.dumps(outfit.get("clothing_items")),
-        preview_image_filename,
-        outfit.get("score"),
-        outfit.get("description"),
-        outfit.get("is_favorite", False),
-        json.dumps(outfit.get("dominant_colors")),
-        json.dumps(outfit.get("styles")),
-        json.dumps(outfit.get("occasions"))
+        preview_image_filename
     )
 
     cursor.execute(query, values)
@@ -175,6 +168,43 @@ def get_user_outfits(user_id: str):
     return outfits
 
 
+@router.post("/cluster")
+def cluster_images():
+    try:
+        run_clustering()
+        return {"message": "Clustering process started successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{outfit_id}")
+def delete_outfit(outfit_id: str):
+    connection = get_database_connection()
+    cursor = connection.cursor()
+    query = "DELETE FROM outfits WHERE id = %s"
+    cursor.execute(query, (outfit_id,))
+    connection.commit()
+
+    return {"message": "Outfit deleted successfully", "outfit_id": outfit_id}
+
+
+class SmartOutfitRequest(BaseModel):
+    wardrobe_items: List[Dict[str, Any]]
+    preferences: Dict[str, Any]
+
+
+@router.post("/generate-smart-outfits")
+def generate_smart_outfits(request: SmartOutfitRequest):
+    creator = SmartOutfitCreator()
+    recommendations = creator.create_smart_outfits(
+        wardrobe_items=request.wardrobe_items,
+        preferences=request.preferences,
+        top_n=10
+    )
+    return recommendations
+
+
+
 @router.get("/user-clothes")
 def get_user_images():
     connection = get_database_connection()
@@ -186,15 +216,6 @@ def get_user_images():
         item['image_url'] = build_image_url(item['filename'])
     return images
 
-
-
-@router.post("/cluster")
-def cluster_images():
-    try:
-        run_clustering()
-        return {"message": "Clustering process started successfully."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{outfit_id}/toggle-favorite")

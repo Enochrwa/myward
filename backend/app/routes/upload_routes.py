@@ -10,7 +10,8 @@ import logging
 from datetime import datetime
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
-
+import os
+from dotenv import load_dotenv
 from mysql.connector import Error
 
 import asyncio
@@ -21,6 +22,10 @@ from ..db.database import get_db, get_database_connection
 from ..tables import ImageMetadata, ImageResponse,BatchUploadResponse,BatchImageMetadata, UpdateCategoryRequest
 from ..security import get_current_user
 from ..utils.image_processing import process_single_image
+
+
+
+from ..services.occasion_weather_outfits import WeatherService, SmartOutfitRecommender
 
 
 UPLOAD_DIR = "uploads"
@@ -846,3 +851,31 @@ async def search_images(
         if connection.is_connected():
             cursor.close()
             connection.close()
+
+
+
+
+@router.get("/occasion-weather")
+def recommend_outfits(user_id: str, city: str, country_code: str = "RW", occasion: str = Query(...)):
+    api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+    weather_service = WeatherService(api_key=api_key)
+    weather = weather_service.get_current_weather(city, country_code)
+
+    wardrobe_items = get_user_wardrobe_items(user_id)  # Fetch user's uploaded clothes
+    recommender = SmartOutfitRecommender(weather_service)
+    recommender.load_wardrobe(wardrobe_items)
+
+    recommendations = recommender.generate_outfit_combinations(weather, occasion)
+
+    results = []
+    for outfit in recommendations:
+        results.append({
+            "items": [{
+                "id": item.id,
+                "filename": item.filename,
+                "category": item.category
+            } for item in outfit.items],
+            "score": outfit.overall_score()
+        })
+
+    return {"recommendations": results}

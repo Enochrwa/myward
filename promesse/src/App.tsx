@@ -23,7 +23,7 @@ import OutfitRecommendations from './components/test/OutfitRecommendations';
 import OutfitPage from "./pages/OutfitPage"
 import WardrobeAnalytics from './components/WardrobeAnalytics';
 import WardrobeAndOutfits from './components/WardrobeAndOutfits';
-
+import DisplayClothes from "./components/DisplayClothes"
 
 
 function App() {
@@ -39,6 +39,7 @@ function App() {
           <main className="pt-16">
             <Routes>
               <Route path="/" element={<IndexPage />}/>
+              <Route path='/clothes' element={<DisplayClothes/>}  />
               <Route path="/outfit-builder/:imageId" element={<OutfitBuilderPage />} />
               <Route path='/classifier' element={<ClotheClassifier/>} />
               <Route path='/test' element={<WardrobeAndOutfits/>} />

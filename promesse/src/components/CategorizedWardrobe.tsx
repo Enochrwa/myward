@@ -66,23 +66,6 @@ const CategorizedWardrobe = () => {
     const navigate = useNavigate();
 
 
-    useEffect(() =>{
-        (
-            async () =>{
-               if(clotheId){
-                 try {
-                    console.log("Item Id: ", clotheId)
-                    const response = await apiClient.getSimilarItems(clotheId);
-                    console.log("Recomendation response: ", response);
-                } catch (error:any) {
-                 console.error("Error getting recommendations: ", error)   
-                }
-               }
-            }
-        )();
-
-        
-    },[clotheId])
 
     useEffect(() => {
         const fetchItems = async () => {
