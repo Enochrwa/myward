@@ -27,9 +27,11 @@ const OutfitBuilderPage: React.FC = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div style={{ display: 'flex' }}>
+      <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
         <GeneratedOutfitsPanel recommendedOutfits={recommendedOutfits} />
-        <OutfitBuilder onSave={(outfit) => console.log('Outfit saved:', outfit)} />
+        <main className="flex-1">
+          <OutfitBuilder onSave={(outfit) => console.log('Outfit saved:', outfit)} />
+        </main>
       </div>
     </DndProvider>
   );

@@ -34,7 +34,19 @@ const CATEGORY_PART_MAPPING: { [key: string]: string } = {
 
 export const GeneratedOutfitsPanel = ({ recommendedOutfits }: { recommendedOutfits: any }) => {
   if (!recommendedOutfits) {
-    return <div>Loading...</div>;
+    return (
+      <div className="w-96 p-6 bg-white dark:bg-gray-900 shadow-lg rounded-2xl flex flex-col">
+        <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Discover Looks</h2>
+        <div className="animate-pulse flex-grow">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+          <div className="grid grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const { outfit } = recommendedOutfits;
@@ -45,6 +57,7 @@ export const GeneratedOutfitsPanel = ({ recommendedOutfits }: { recommendedOutfi
     outerwear: [],
     accessory: [],
     full_body: [],
+    shoes: [],
   };
 
   Object.values(outfit).forEach((item: any) => {
@@ -55,18 +68,22 @@ export const GeneratedOutfitsPanel = ({ recommendedOutfits }: { recommendedOutfi
   });
 
   return (
-    <div style={{ width: '30%' }}>
-      <h2>Recommended Outfits</h2>
-      {Object.entries(groupedOutfits).map(([part, items]) => (
-        <div key={part}>
-          <h3>{part.charAt(0).toUpperCase() + part.slice(1)}</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-            {items.map((item: any) => (
-              <DraggableImage key={item.id} item={item} type={part} />
-            ))}
-          </div>
-        </div>
-      ))}
+    <div className="w-96 p-6 bg-white dark:bg-gray-900 shadow-lg rounded-2xl flex flex-col">
+      <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center">Discover Looks</h2>
+      <div className="space-y-6 overflow-y-auto flex-grow">
+        {Object.entries(groupedOutfits).map(([part, items]) => (
+          items.length > 0 && (
+            <div key={part}>
+              <h3 className="text-xl font-semibold mb-3 text-gray-700 dark:text-gray-300 capitalize">{part.replace('_', ' ')}</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {items.map((item: any) => (
+                  <DraggableImage key={item.id} item={item} type={part} />
+                ))}
+              </div>
+            </div>
+          )
+        ))}
+      </div>
     </div>
   );
 };
