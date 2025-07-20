@@ -1,14 +1,28 @@
-import { WardrobeItemResponse } from '@/lib/apiClient';
+import { WardrobeItemResponse } from "@/lib/apiClient";
 
 export interface Outfit {
-  [category: string]: WardrobeItemResponse;
+    id: number;
+    name: string;
+    gender: string;
+    clothing_items: WardrobeItemResponse[];
+    clothing_parts: string[];
+}
+  
+export interface OutfitCreate {
+    name: string;
+    gender: string;
+    clothing_items: number[];
+    clothing_parts: string[];
 }
 
-export interface OutfitCreate {
-  name: string;
-  gender: string;
-  clothing_items: number[];
-  clothing_parts: (string | undefined)[];
+export interface SmartOutfit {
+    items: WardrobeItemResponse[];
+    score: number;
+    score_breakdown: any;
+    description: string;
+    dominant_colors: string[];
+    styles: string[];
+    occasions: string[];
 }
 
 export interface Feedback {

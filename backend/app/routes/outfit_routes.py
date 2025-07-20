@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from ..security import get_current_user
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Dict, Any
@@ -10,6 +11,7 @@ import io
 from ..db.database import get_database_connection
 from ..utils.constants import CATEGORY_PART_MAPPING, CLOTHING_PARTS, OUTFIT_RULES
 from ..utils.cluster import main as run_clustering
+from ..services.outfit_creation_service import SmartOutfitCreator
 
 
 router = APIRouter(prefix="/outfit")
@@ -191,3 +193,19 @@ def delete_outfit(outfit_id: str):
     connection.commit()
 
     return {"message": "Outfit deleted successfully", "outfit_id": outfit_id}
+
+
+class SmartOutfitRequest(BaseModel):
+    wardrobe_items: List[Dict[str, Any]]
+    preferences: Dict[str, Any]
+
+
+@router.post("/generate-smart-outfits")
+def generate_smart_outfits(request: SmartOutfitRequest):
+    creator = SmartOutfitCreator()
+    recommendations = creator.create_smart_outfits(
+        wardrobe_items=request.wardrobe_items,
+        preferences=request.preferences,
+        top_n=10
+    )
+    return recommendations
