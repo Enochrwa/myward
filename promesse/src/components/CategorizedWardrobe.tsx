@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import namer from 'color-namer';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import * as apiClient from '@/lib/apiClient';
@@ -61,6 +62,8 @@ const CategorizedWardrobe = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [clotheId, setClotheId] = useState<string>("")
+
+    const navigate = useNavigate();
 
 
     useEffect(() =>{
@@ -219,7 +222,7 @@ const CategorizedWardrobe = () => {
                                         <DraggableImage key={item.id} image={item}>
                                             <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 border-owis-sage/20 grid grid-rows-[1fr_auto]">
                                                 <div className="grid">
-                                                    <div className="relative" onClick={() => setClotheId(item?.id)}>
+                                                    <div className="relative" onDoubleClick={() => navigate(`/outfit-builder/${item?.id}`)}>
                                                         <img
                                                             src={item.image_url}
                                                             alt={formatFileName(item.original_name)}
