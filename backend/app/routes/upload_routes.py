@@ -196,7 +196,7 @@ def recommend_similar(image_id: str, top_k: int = 5):
         features.append(vec)
 
     if len(features) < top_k:
-        raise HTTPException(status_code=400, detail="Not enough images in this category to recommend.")
+        raise HTTPException(status_code=400, detail="Not enough clothes in this category to recommend.")
 
     features = np.vstack(features)
 
