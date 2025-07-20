@@ -101,7 +101,7 @@ def recommend_outfit(image_id: str):
 
 @router.post("/custom")
 def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
-    user_id = user['id']
+    user_id = user.id
     outfit_id = str(uuid.uuid4())
     
     connection = get_database_connection()
@@ -133,8 +133,9 @@ def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
         preview_image_filename = None
 
     query = """
-        INSERT INTO outfits (id, user_id, name, gender, clothing_parts, clothing_items, preview_image)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO outfits (id, user_id, name, gender, clothing_parts, clothing_items, preview_image,
+                               score, description, is_favorite, dominant_colors, styles, occasions)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     
     values = (
@@ -144,7 +145,13 @@ def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
         outfit.get("gender"),
         json.dumps(outfit.get("clothing_parts")),
         json.dumps(outfit.get("clothing_items")),
-        preview_image_filename
+        preview_image_filename,
+        outfit.get("score"),
+        outfit.get("description"),
+        outfit.get("is_favorite", False),
+        json.dumps(outfit.get("dominant_colors")),
+        json.dumps(outfit.get("styles")),
+        json.dumps(outfit.get("occasions"))
     )
 
     cursor.execute(query, values)
@@ -188,6 +195,29 @@ def cluster_images():
         return {"message": "Clustering process started successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{outfit_id}/toggle-favorite")
+def toggle_favorite_outfit(outfit_id: str, user: dict = Depends(get_current_user)):
+    user_id = user['id']
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # First, get the current favorite status
+    cursor.execute("SELECT is_favorite FROM outfits WHERE id = %s AND user_id = %s", (outfit_id, user_id))
+    outfit = cursor.fetchone()
+
+    if not outfit:
+        raise HTTPException(status_code=404, detail="Outfit not found.")
+
+    new_status = not outfit['is_favorite']
+
+    # Update the favorite status
+    query = "UPDATE outfits SET is_favorite = %s WHERE id = %s AND user_id = %s"
+    cursor.execute(query, (new_status, outfit_id, user_id))
+    connection.commit()
+
+    return {"message": "Favorite status updated successfully", "outfit_id": outfit_id, "is_favorite": new_status}
 
 
 @router.delete("/{outfit_id}")

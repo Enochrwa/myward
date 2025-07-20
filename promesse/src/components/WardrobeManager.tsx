@@ -63,6 +63,8 @@ const WardrobeManager = () => {
         }
     };
 
+    console.log("Current user: ", user);
+
     useEffect(() => {
         fetchSavedOutfits();
     }, []);

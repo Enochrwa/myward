@@ -394,6 +394,19 @@ export const getSimilarItems = async (
   });
 };
 
+export const generateSmartOutfits = async (
+    wardrobeItems: any[],
+    preferences: any
+): Promise<any> => {
+    return apiClient('/outfit/generate-smart-outfits', {
+        method: 'POST',
+        body: {
+            wardrobe_items: wardrobeItems,
+            preferences: preferences
+        }
+    });
+}
+
 export const clusterImages = async (): Promise<any> => {
   return apiClient('/outfit/cluster', {
     method: 'POST'
@@ -424,6 +437,14 @@ export const deleteOutfit = async (
         method: 'DELETE'
     });
 };
+
+export const toggleFavoriteOutfit = async (
+    outfitId: string
+): Promise<any> => {
+    return apiClient(`/outfit/${outfitId}/toggle-favorite`, {
+        method: 'POST'
+    });
+}
 
 export const recommendOutfit = async (
   imageId: number

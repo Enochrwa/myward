@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { saveOutfit, toggleFavoriteOutfit, generateSmartOutfits } from "@/lib/apiClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart } from "lucide-react";
 
@@ -13,6 +13,7 @@ interface WardrobeItem {
 }
 
 interface Outfit {
+    id?: string;
     score: number;
     description: string;
     items: WardrobeItem[];
@@ -42,13 +43,9 @@ const SmartOutfitRecommendations: React.FC<Props> = ({ wardrobeItems, userId }) 
         const preferences = { occasion: selectedOccasion, season: selectedSeason };
 
         setLoading(true);
-        axios
-            .post("http://127.0.0.1:8000/api/outfit/generate-smart-outfits", {
-                wardrobe_items: wardrobeItems,
-                preferences,
-            })
-            .then((res) => {
-                setOutfits(res.data.map((o: Outfit) => ({ ...o, isFavorite: false })));
+        generateSmartOutfits(wardrobeItems, preferences)
+            .then((data) => {
+                setOutfits(data.map((o: Outfit) => ({ ...o, isFavorite: false })));
                 setLoading(false);
             })
             .catch(() => {
@@ -63,20 +60,46 @@ const SmartOutfitRecommendations: React.FC<Props> = ({ wardrobeItems, userId }) 
     }, [selectedOccasion, selectedSeason, wardrobeItems]);
 
     const toggleFavorite = (index: number) => {
-        setOutfits((prev) =>
-            prev.map((o, i) => (i === index ? { ...o, isFavorite: !o.isFavorite } : o))
-        );
+        const outfit = outfits[index];
+        if (!outfit) return;
+
+        if (outfit.id) {
+            // Optimistically update the UI
+            const newOutfits = [...outfits];
+            newOutfits[index] = { ...outfit, isFavorite: !outfit.isFavorite };
+            setOutfits(newOutfits);
+            
+            toggleFavoriteOutfit(outfit.id)
+                .catch(() => {
+                    // Revert the change if the API call fails
+                    setOutfits(outfits);
+                    alert("Failed to update favorite status.");
+                });
+        } else {
+            // If the outfit doesn't have an ID, it hasn't been saved yet.
+            // Just toggle the state locally.
+            setOutfits((prev) =>
+                prev.map((o, i) => (i === index ? { ...o, isFavorite: !o.isFavorite } : o))
+            );
+        }
     };
 
     const handleSaveOutfit = (outfit: Outfit) => {
         const clothingItems = outfit.items.map((i) => i.id);
         const clothingParts = outfit.items.map((i) => i.clothing_part);
 
-        axios.post("http://127.0.0.1:8000/api/outfit/custom", {
+        saveOutfit({
             name: outfit.description,
             gender: "Unisex",
             clothing_items: clothingItems,
             clothing_parts: clothingParts,
+            score: outfit.score,
+            description: outfit.description,
+            is_favorite: outfit.isFavorite,
+            dominant_colors: outfit.items.map((i) => i.dominant_color),
+            styles: [...new Set(outfit.items.map((i) => i.style))],
+            occasions: [...new Set(outfit.items.map((i) => i.style
+            ))]
         })
             .then(() => alert("Outfit saved successfully!"))
             .catch(() => alert("Failed to save outfit."));

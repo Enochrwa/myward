@@ -21,8 +21,8 @@ import axios from 'axios'
 import ClotheClassifier from './components/ClotheClassifier';
 import OutfitRecommendations from './components/test/OutfitRecommendations';
 import OutfitPage from "./pages/OutfitPage"
-import WardrobeTestPage from './pages/WardrobeTestPaget';
-
+import WardrobeAnalytics from './components/WardrobeAnalytics';
+import WardrobeAndOutfits from './components/WardrobeAndOutfits';
 
 
 
@@ -41,7 +41,7 @@ function App() {
               <Route path="/" element={<IndexPage />}/>
               <Route path="/outfit-builder/:imageId" element={<OutfitBuilderPage />} />
               <Route path='/classifier' element={<ClotheClassifier/>} />
-              <Route path='/test' element={<WardrobeTestPage/>} />
+              <Route path='/test' element={<WardrobeAndOutfits/>} />
               <Route path="/upload" element={<UploadForm />} />
               <Route path="/outfit" element={<OutfitPage/>} />
               <Route path="/gallery" element={<OutfitRecommendations/>} />

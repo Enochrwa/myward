@@ -148,11 +148,37 @@ def init_clothes_database():
             clothing_parts JSON,
             clothing_items JSON,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            preview_image BLOB
+            preview_image BLOB,
+            score FLOAT,
+            description TEXT,
+            is_favorite BOOLEAN DEFAULT FALSE,
+            dominant_colors JSON,
+            styles JSON,
+            occasions JSON
         )
         """
         cursor.execute(create_outfits_table)
         
+        # Add new columns to outfits table if they don't exist
+        outfit_columns = {
+            "score": "FLOAT",
+            "description": "TEXT",
+            "is_favorite": "BOOLEAN DEFAULT FALSE",
+            "dominant_colors": "JSON",
+            "styles": "JSON",
+            "occasions": "JSON"
+        }
+        
+        for column, definition in outfit_columns.items():
+            try:
+                cursor.execute(f"ALTER TABLE outfits ADD COLUMN {column} {definition}")
+                connection.commit()
+                logger.info(f"Added '{column}' column to 'outfits' table.")
+            except Error as e:
+                if "Duplicate column name" in str(e):
+                    pass
+                else:
+                    raise
         
         connection.commit()
         logger.info("Database initialized successfully")
