@@ -1,45 +1,76 @@
 import React, { useState } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { useDrop } from 'react-dnd';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Save } from 'lucide-react';
-import * as apiClient from '@/lib/apiClient';
+import { Save, Trash2, X } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import * as apiClient from '@/lib/apiClient';
 
-const OutfitBuilder = ({ items, onSave }) => {
+const DropZone = ({ onDrop, items, title, acceptedTypes, onRemoveItem }) => {
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: acceptedTypes,
+    drop: (item) => onDrop(item),
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  }));
+
+  return (
+    <div
+      ref={drop}
+      className={`h-48 border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${
+        isOver ? 'bg-accent' : ''
+      } dark:border-gray-600`}
+    >
+      {items.length > 0 ? (
+        items.map((item) => (
+          <div key={item.id} className="relative group">
+            <img
+              src={item.image_url}
+              alt={item.name}
+              className="max-h-full rounded-lg"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => onRemoveItem(item.id)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ))
+      ) : (
+        <p className="text-muted-foreground">{title}</p>
+      )}
+    </div>
+  );
+};
+
+const OutfitBuilder = ({ onSave }) => {
   const { toast } = useToast();
   const [playground, setPlayground] = useState({
-    top: null,
-    bottom: null,
-    outerwear: null,
+    top: [],
+    bottom: [],
+    outerwear: [],
     accessory: [],
   });
 
-  const onDragEnd = (result) => {
-    const { source, destination } = result;
-
-    if (!destination) {
-      return;
-    }
-
-    const sourceId = source.droppableId;
-    const destinationId = destination.droppableId;
-    const sourceIndex = source.index;
-    const destinationIndex = destination.index;
-
-    if (sourceId === destinationId && sourceIndex === destinationIndex) {
-      return;
-    }
-
-    const item = items[sourceIndex];
-
-    if (destinationId.startsWith('playground-')) {
-      const category = destinationId.split('-')[1];
-      setPlayground((prev) => ({
+  const handleDrop = (item, category) => {
+    setPlayground((prev) => {
+      const newCategoryItems = category === 'accessory' ? [...prev[category], item] : [item];
+      return {
         ...prev,
-        [category]: category === 'accessory' ? [...prev.accessory, item] : item,
-      }));
-    }
+        [category]: newCategoryItems,
+      };
+    });
+  };
+
+  const handleRemoveItem = (category, itemId) => {
+    setPlayground((prev) => ({
+      ...prev,
+      [category]: prev[category].filter((item) => item.id !== itemId),
+    }));
   };
 
   const handleSaveOutfit = async () => {
@@ -47,16 +78,20 @@ const OutfitBuilder = ({ items, onSave }) => {
     const clothing_items = [];
 
     for (const category in playground) {
-      const item = playground[category];
-      if (item) {
-        if (Array.isArray(item)) {
-          clothing_parts[category] = item.map((i) => i.id);
-          clothing_items.push(...item.map((i) => i.id));
+      const items = playground[category];
+      if (items.length > 0) {
+        if (category === 'accessory') {
+          clothing_parts[category] = items.map((i) => i.id);
         } else {
-          clothing_parts[category] = item.id;
-          clothing_items.push(item.id);
+          clothing_parts[category] = items[0].id;
         }
+        clothing_items.push(...items.map((i) => i.id));
       }
+    }
+
+    if (clothing_items.length === 0) {
+      toast({ title: "Empty Outfit", description: "Add some items to the playground first.", variant: "destructive" });
+      return;
     }
 
     const outfitData = {
@@ -67,154 +102,67 @@ const OutfitBuilder = ({ items, onSave }) => {
     };
 
     try {
-      await onSave(outfitData);
+      await apiClient.saveOutfit(outfitData);
       toast({ title: "Success", description: "Outfit saved." });
+      onSave(outfitData);
+      // Clear playground after saving
+      setPlayground({
+        top: [],
+        bottom: [],
+        outerwear: [],
+        accessory: [],
+      });
     } catch (err) {
       toast({ title: "Error", description: "Could not save outfit.", variant: "destructive" });
     }
   };
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-3 gap-4">
-        <Droppable droppableId="items">
-          {(provided) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className="col-span-1"
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Wardrobe</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {items.map((item, index) => (
-                    <Draggable key={item.id} draggableId={item.id} index={index}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className="mb-2"
-                        >
-                          <Card>
-                            <CardContent className="p-2">
-                              <img src={item.image_url} alt={item.name} />
-                              <p>{item.name}</p>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </Droppable>
-
-        <div className="col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Playground</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <Droppable droppableId="playground-top">
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="h-48 border-2 border-dashed rounded-lg flex items-center justify-center"
-                    >
-                      {playground.top ? (
-                        <img
-                          src={playground.top.image_url}
-                          alt={playground.top.name}
-                          className="max-h-full"
-                        />
-                      ) : (
-                        <p>Top</p>
-                      )}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-                <Droppable droppableId="playground-bottom">
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="h-48 border-2 border-dashed rounded-lg flex items-center justify-center"
-                    >
-                      {playground.bottom ? (
-                        <img
-                          src={playground.bottom.image_url}
-                          alt={playground.bottom.name}
-                          className="max-h-full"
-                        />
-                      ) : (
-                        <p>Bottom</p>
-                      )}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-                <Droppable droppableId="playground-outerwear">
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="h-48 border-2 border-dashed rounded-lg flex items-center justify-center"
-                    >
-                      {playground.outerwear ? (
-                        <img
-                          src={playground.outerwear.image_url}
-                          alt={playground.outerwear.name}
-                          className="max-h-full"
-                        />
-                      ) : (
-                        <p>Outerwear</p>
-                      )}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-                <Droppable droppableId="playground-accessory">
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="h-48 border-2 border-dashed rounded-lg flex items-center justify-center"
-                    >
-                      {playground.accessory.length > 0 ? (
-                        playground.accessory.map((item) => (
-                          <img
-                            key={item.id}
-                            src={item.image_url}
-                            alt={item.name}
-                            className="max-h-16"
-                          />
-                        ))
-                      ) : (
-                        <p>Accessory</p>
-                      )}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
-              <Button onClick={handleSaveOutfit} className="mt-4">
-                <Save size={16} className="mr-2" />
-                Save Outfit
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </DragDropContext>
+    <div className="w-full p-6 bg-background text-foreground">
+      <Card className="bg-card">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">Outfit Playground</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-6">
+            <DropZone
+              onDrop={(item) => handleDrop(item, 'top')}
+              items={playground.top}
+              title="Top"
+              acceptedTypes={['top']}
+              onRemoveItem={(itemId) => handleRemoveItem('top', itemId)}
+            />
+            <DropZone
+              onDrop={(item) => handleDrop(item, 'bottom')}
+              items={playground.bottom}
+              title="Bottom"
+              acceptedTypes={['bottom']}
+              onRemoveItem={(itemId) => handleRemoveItem('bottom', itemId)}
+            />
+            <DropZone
+              onDrop={(item) => handleDrop(item, 'outerwear')}
+              items={playground.outerwear}
+              title="Outerwear"
+              acceptedTypes={['outerwear']}
+              onRemoveItem={(itemId) => handleRemoveItem('outerwear', itemId)}
+            />
+            <DropZone
+              onDrop={(item) => handleDrop(item, 'accessory')}
+              items={playground.accessory}
+              title="Accessories"
+              acceptedTypes={['accessory']}
+              onRemoveItem={(itemId) => handleRemoveItem('accessory', itemId)}
+            />
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button onClick={handleSaveOutfit} size="lg">
+              <Save size={20} className="mr-2" />
+              Save Outfit
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -394,7 +394,7 @@ export const getSimilarItems = async (
   });
 };
 
-export const saveCustomOutfit = async (
+export const saveOutfit = async (
   outfitData: any
 ): Promise<any> => {
   return apiClient('/outfit/custom', {

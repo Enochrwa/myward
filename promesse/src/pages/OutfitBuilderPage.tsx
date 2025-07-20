@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { GeneratedOutfitsPanel } from '../components/GeneratedOutfitsPanel';
-import { OutfitPlayground } from '../components/OutfitPlayground';
+import OutfitBuilder from '../components/OutfitBuilder';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 
@@ -29,7 +29,7 @@ const OutfitBuilderPage: React.FC = () => {
     <DndProvider backend={HTML5Backend}>
       <div style={{ display: 'flex' }}>
         <GeneratedOutfitsPanel recommendedOutfits={recommendedOutfits} />
-        <OutfitPlayground />
+        <OutfitBuilder onSave={(outfit) => console.log('Outfit saved:', outfit)} />
       </div>
     </DndProvider>
   );
