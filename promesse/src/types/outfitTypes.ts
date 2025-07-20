@@ -6,9 +6,9 @@ export interface Outfit {
 
 export interface OutfitCreate {
   name: string;
-  item_ids: number[];
-  tags?: string[];
-  image_url?: string;
+  gender: string;
+  clothing_items: number[];
+  clothing_parts: (string | undefined)[];
 }
 
 export interface Feedback {

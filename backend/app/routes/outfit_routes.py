@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from ..security import get_current_user
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Dict, Any
 import json
@@ -104,8 +105,8 @@ def recommend_outfit(image_id: str):
 
 
 @router.post("/custom")
-def save_custom_outfit(outfit: dict):
-    user_id = "123"  # TODO: Replace with authenticated user id
+def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
+    user_id = user['id']
     outfit_id = str(uuid.uuid4())
     
     connection = get_database_connection()
@@ -119,6 +120,7 @@ def save_custom_outfit(outfit: dict):
         if row:
             images_to_stitch.append(f"uploads/{row['filename']}")
 
+    preview_image_filename = f"outfit_{outfit_id}.jpg"
     if images_to_stitch:
         images = [Image.open(i) for i in images_to_stitch]
         widths, heights = zip(*(i.size for i in images))
@@ -131,11 +133,9 @@ def save_custom_outfit(outfit: dict):
             new_im.paste(im, (x_offset, 0))
             x_offset += im.size[0]
         
-        output = io.BytesIO()
-        new_im.save(output, format='JPEG')
-        preview_image = output.getvalue()
+        new_im.save(f"uploads/{preview_image_filename}", 'JPEG')
     else:
-        preview_image = None
+        preview_image_filename = None
 
     query = """
         INSERT INTO outfits (id, user_id, name, gender, clothing_parts, clothing_items, preview_image)
@@ -149,13 +149,13 @@ def save_custom_outfit(outfit: dict):
         outfit.get("gender"),
         json.dumps(outfit.get("clothing_parts")),
         json.dumps(outfit.get("clothing_items")),
-        preview_image
+        preview_image_filename
     )
 
     cursor.execute(query, values)
     connection.commit()
 
-    return {"message": "Outfit saved successfully", "outfit_id": outfit_id}
+    return {"message": "Outfit saved successfully", "outfit_id": outfit_id, "preview_image_url": build_image_url(preview_image_filename)}
 
 
 @router.get("/user/{user_id}")
@@ -166,6 +166,9 @@ def get_user_outfits(user_id: str):
     query = "SELECT * FROM outfits WHERE user_id = %s"
     cursor.execute(query, (user_id,))
     outfits = cursor.fetchall()
+
+    for outfit in outfits:
+        outfit['preview_image_url'] = build_image_url(outfit['preview_image'])
 
     return outfits
 

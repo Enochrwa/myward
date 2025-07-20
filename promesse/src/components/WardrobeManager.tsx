@@ -3,6 +3,7 @@ import { Plus, Search, Filter, Grid, List, Heart, Star, Calendar, Edit, Trash2, 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardTitle, CardFooter, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Link } from 'react-router-dom';
@@ -10,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AddItemModal from './AddItemModal';
 import EditItemModal from './EditItemModal';
 import * as apiClient from '@/lib/apiClient';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from "@/components/ui/use-toast";
 import LoadingSpinner from '@/components/ui/loading';
 import CreateOutfitModal from './CreateOutfitModal';
@@ -27,7 +27,7 @@ import SingleGridWardrobe from './CategorizedWardrobe';
 import OutfitBuilder from './OutfitBuilder';
 
 const WardrobeManager = () => {
-    const { token } = useAuth();
+    // const { token } = useAuth();
     const { toast } = useToast();
 
     const [items, setItems] = useState<WardrobeItemResponse[]>([]);
@@ -51,10 +51,11 @@ const WardrobeManager = () => {
     const [outfit, setOutfit] = useState<Outfit | null>(null);
     const [savedOutfits, setSavedOutfits] = useState<any[]>([]);
 
+    const { user } = useAuth();
     const fetchSavedOutfits = async () => {
+        if (!user) return;
         try {
-            // TODO: get user_id from auth
-            const outfits = await apiClient.getUserOutfits("123");
+            const outfits = await apiClient.getUserOutfits(user.id);
             setSavedOutfits(outfits);
         } catch (err) {
             console.error(err);
@@ -67,7 +68,7 @@ const WardrobeManager = () => {
 
     const handleSaveOutfit = async (outfitData: any) => {
         try {
-            await apiClient.saveCustomOutfit(outfitData);
+            await apiClient.saveOutfit(outfitData);
             fetchSavedOutfits();
         } catch (err: any) {
             console.error(err);
