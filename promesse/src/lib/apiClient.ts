@@ -446,6 +446,16 @@ export const toggleFavoriteOutfit = async (
     });
 }
 
+export const updateOutfit = async (
+    outfitId: string,
+    outfitData: any
+): Promise<any> => {
+    return apiClient(`/outfit/${outfitId}`, {
+        method: 'PUT',
+        body: outfitData
+    });
+}
+
 export const recommendOutfit = async (
   imageId: number
 ): Promise<any> => {

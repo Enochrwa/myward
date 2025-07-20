@@ -231,6 +231,51 @@ def delete_outfit(outfit_id: str):
     return {"message": "Outfit deleted successfully", "outfit_id": outfit_id}
 
 
+@router.put("/{outfit_id}")
+def update_outfit(outfit_id: str, outfit: dict, user: dict = Depends(get_current_user)):
+    user_id = user.id
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    query = """
+        UPDATE outfits
+        SET name = %s,
+            gender = %s,
+            clothing_parts = %s,
+            clothing_items = %s,
+            score = %s,
+            description = %s,
+            is_favorite = %s,
+            dominant_colors = %s,
+            styles = %s,
+            occasions = %s
+        WHERE id = %s AND user_id = %s
+    """
+    
+    values = (
+        outfit.get("name"),
+        outfit.get("gender"),
+        json.dumps(outfit.get("clothing_parts")),
+        json.dumps(outfit.get("clothing_items")),
+        outfit.get("score"),
+        outfit.get("description"),
+        outfit.get("is_favorite", False),
+        json.dumps(outfit.get("dominant_colors")),
+        json.dumps(outfit.get("styles")),
+        json.dumps(outfit.get("occasions")),
+        outfit_id,
+        user_id
+    )
+
+    cursor.execute(query, values)
+    connection.commit()
+
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Outfit not found or user not authorized.")
+
+    return {"message": "Outfit updated successfully", "outfit_id": outfit_id}
+
+
 class SmartOutfitRequest(BaseModel):
     wardrobe_items: List[Dict[str, Any]]
     preferences: Dict[str, Any]
