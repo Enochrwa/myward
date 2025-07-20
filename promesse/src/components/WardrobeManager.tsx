@@ -304,7 +304,7 @@ const WardrobeManager = () => {
               <TabsTrigger value="wardrobe">My Items</TabsTrigger>
               {/* <TabsTrigger value="ml-analysis"><Sparkles className="h-4 w-4 mr-1" /> AI Analysis</TabsTrigger> */}
               <TabsTrigger value="recommendations"><Target className="h-4 w-4 mr-1" /> Smart Outfits</TabsTrigger>
-              <TabsTrigger value="outfit-builder"><Palette className="h-4 w-4 mr-1" /> Outfit Builder</TabsTrigger>
+              {/* <TabsTrigger value="outfit-builder"><Palette className="h-4 w-4 mr-1" /> Outfit Builder</TabsTrigger> */}
               <TabsTrigger value="similar-items"><Palette className="h-4 w-4 mr-1" /> Find Similar</TabsTrigger>
               {/* <TabsTrigger value="tools">Tools</TabsTrigger> */}
             </TabsList>
@@ -434,9 +434,9 @@ const WardrobeManager = () => {
                 </Card>
               </div>
             </TabsContent>
-            <TabsContent value="outfit-builder">
+            {/* <TabsContent value="outfit-builder">
               <OutfitBuilder items={items} onSave={handleSaveOutfit} />
-            </TabsContent>
+            </TabsContent> */}
             <TabsContent value="similar-items"><SimilarItemsFinderComponent/></TabsContent>
             {/* <TabsContent value="tools"><div>Tools placeholder</div></TabsContent> */}
           </Tabs>
