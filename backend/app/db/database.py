@@ -125,6 +125,22 @@ def init_clothes_database():
         )
         """
         cursor.execute(create_batch_table)
+
+        # Create outfits table
+        create_outfits_table = """
+        CREATE TABLE IF NOT EXISTS outfits (
+            id VARCHAR(36) PRIMARY KEY,
+            user_id VARCHAR(36),
+            name VARCHAR(255),
+            gender VARCHAR(50),
+            clothing_parts JSON,
+            clothing_items JSON,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            preview_image BLOB
+        )
+        """
+        cursor.execute(create_outfits_table)
+        
         
         connection.commit()
         logger.info("Database initialized successfully")

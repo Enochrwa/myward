@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, Grid, List, Heart, Star, Calendar, Edit, Trash2, AlertTriangle, Sparkles, Palette, Target, UploadCloud, CheckSquare, XSquare, Clock } from 'lucide-react';
+import { Plus, Search, Filter, Grid, List, Heart, Star, Calendar, Edit, Trash2, AlertTriangle, Sparkles, Palette, Target, UploadCloud, CheckSquare, XSquare, Clock, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardTitle, CardFooter, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AddItemModal from './AddItemModal';
@@ -20,10 +21,10 @@ import OccasionPlanner from './OccasionPlanner';
 import StyleHistory from './StyleHistory';
 import OutfitOrganizer from './OutfitOrganizer';
 import MLAnalysisComponent from './MLAnalysisComponent';
-import SmartRecommendationsComponent from './SmartRecommendationsComponent';
 import SimilarItemsFinderComponent from './SimilarItemsFinderComponent';
-import { WardrobeItemResponse, WardrobeItemCreate, WardrobeItemUpdate } from '@/lib/apiClient';
+import { WardrobeItemResponse, WardrobeItemCreate, WardrobeItemUpdate, Outfit } from '@/lib/apiClient';
 import SingleGridWardrobe from './CategorizedWardrobe';
+import OutfitBuilder from './OutfitBuilder';
 
 const WardrobeManager = () => {
     const { token } = useAuth();
@@ -47,6 +48,119 @@ const WardrobeManager = () => {
     const [isOccasionPlannerOpen, setIsOccasionPlannerOpen] = useState(false);
     const [isStyleHistoryOpen, setIsStyleHistoryOpen] = useState(false);
     const [isOutfitOrganizerOpen, setIsOutfitOrganizerOpen] = useState(false);
+    const [outfit, setOutfit] = useState<Outfit | null>(null);
+    const [savedOutfits, setSavedOutfits] = useState<any[]>([]);
+
+    const fetchSavedOutfits = async () => {
+        try {
+            // TODO: get user_id from auth
+            const outfits = await apiClient.getUserOutfits("123");
+            setSavedOutfits(outfits);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        fetchSavedOutfits();
+    }, []);
+
+    const handleSaveOutfit = async (outfitData: any) => {
+        try {
+            await apiClient.saveCustomOutfit(outfitData);
+            fetchSavedOutfits();
+        } catch (err: any) {
+            console.error(err);
+            throw err;
+        }
+    };
+
+    const handleDeleteOutfit = async (outfitId: string) => {
+        try {
+            await apiClient.deleteOutfit(outfitId);
+            fetchSavedOutfits();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const generateOutfit = useCallback(async () => {
+        if (items.length === 0) {
+            setError('You need to add items to your wardrobe first.');
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            const randomItem = items[Math.floor(Math.random() * items.length)];
+            const recommendedOutfit = await apiClient.recommendOutfit(randomItem.id);
+            setOutfit(recommendedOutfit);
+        } catch (err: any) {
+            setError(err.message || 'Failed to generate outfit.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [items]);
+
+    const renderOutfit = () => {
+        if (!outfit) return null;
+
+        const outfitCategories = {
+            outerwear: [] as any[],
+            tops: [] as any[],
+            bottoms: [] as any[],
+            footwear: [] as any[],
+            accessories: [] as any[],
+        };
+
+        for (const key in outfit) {
+            const item = outfit[key as keyof Outfit];
+            if (item && typeof item === 'object' && 'category' in item) {
+                const category = item.category?.toLowerCase();
+                if (category?.includes('coat') || category?.includes('jacket') || category?.includes('blazer') || category?.includes('cardigan')) {
+                    outfitCategories.outerwear.push(item);
+                } else if (category?.includes('t-shirt') || category?.includes('blouse') || category?.includes('top') || category?.includes('shirt')) {
+                    outfitCategories.tops.push(item);
+                } else if (category?.includes('pants') || category?.includes('jeans') || category?.includes('skirt') || category?.includes('shorts')) {
+                    outfitCategories.bottoms.push(item);
+                } else if (category?.includes('shoes') || category?.includes('boots') || category?.includes('sneakers') || category?.includes('sandals')) {
+                    outfitCategories.footwear.push(item);
+                } else {
+                    outfitCategories.accessories.push(item);
+                }
+            }
+        }
+
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Smart Outfit</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {Object.entries(outfitCategories).map(([category, items]) => (
+                        items.length > 0 && (
+                            <div key={category}>
+                                <h4 className="text-lg font-semibold mb-2 capitalize">{category}</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {items.map((item: any) => (
+                                        <Card key={item.id}>
+                                            <CardContent className="p-0">
+                                                <img src={item.image_url} alt={item.name} className="w-full h-48 object-cover rounded-t-lg" />
+                                                <div className="p-4">
+                                                    <h5 className="font-semibold">{item.name}</h5>
+                                                    <p className="text-sm text-gray-500">{item.category}</p>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </div>
+                        )
+                    ))}
+                </CardContent>
+            </Card>
+        );
+    };
 
     const fetchItems = useCallback(async () => {
         setIsLoading(true);
@@ -190,6 +304,7 @@ const WardrobeManager = () => {
               <TabsTrigger value="wardrobe">My Items</TabsTrigger>
               {/* <TabsTrigger value="ml-analysis"><Sparkles className="h-4 w-4 mr-1" /> AI Analysis</TabsTrigger> */}
               <TabsTrigger value="recommendations"><Target className="h-4 w-4 mr-1" /> Smart Outfits</TabsTrigger>
+              <TabsTrigger value="outfit-builder"><Palette className="h-4 w-4 mr-1" /> Outfit Builder</TabsTrigger>
               <TabsTrigger value="similar-items"><Palette className="h-4 w-4 mr-1" /> Find Similar</TabsTrigger>
               {/* <TabsTrigger value="tools">Tools</TabsTrigger> */}
             </TabsList>
@@ -257,7 +372,71 @@ const WardrobeManager = () => {
             
             {/* Other Tabs Content */}
             {/* <TabsContent value="ml-analysis"><MLAnalysisComponent onAnalysisComplete={() => {}} /></TabsContent> */}
-            <TabsContent value="recommendations"><SmartRecommendationsComponent onOutfitSelect={() => {}} /></TabsContent>
+            <TabsContent value="recommendations">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5" />
+                      Smart Outfit Recommendations
+                    </CardTitle>
+                    <CardDescription>
+                      Let our AI create a stylish outfit from your wardrobe.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button onClick={generateOutfit} disabled={isLoading || items.length === 0}>
+                      <Shuffle className="mr-2 h-4 w-4" />
+                      {isLoading ? 'Generating...' : 'Generate New Outfit'}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {isLoading && (
+                  <div className="flex justify-center py-8">
+                    <LoadingSpinner />
+                  </div>
+                )}
+
+                {!isLoading && !error && outfit && renderOutfit()}
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Saved Outfits</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {savedOutfits.map((savedOutfit) => (
+                      <Card key={savedOutfit.id}>
+                        <CardContent className="p-0">
+                          <img src={savedOutfit.preview_image} alt={savedOutfit.name} className="w-full h-48 object-cover rounded-t-lg" />
+                          <div className="p-4">
+                            <h5 className="font-semibold">{savedOutfit.name}</h5>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteOutfit(savedOutfit.id)}
+                              className="mt-2"
+                            >
+                              <Trash2 size={16} className="mr-2" />
+                              Delete
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent value="outfit-builder">
+              <OutfitBuilder items={items} onSave={handleSaveOutfit} />
+            </TabsContent>
             <TabsContent value="similar-items"><SimilarItemsFinderComponent/></TabsContent>
             {/* <TabsContent value="tools"><div>Tools placeholder</div></TabsContent> */}
           </Tabs>

@@ -118,8 +118,122 @@ def recommend_outfit(image_id: str):
         else:
             outfit[category] = clean_item(items[sorted_indices[0]])
 
+    # Save the outfit
+    outfit_id = str(random.randint(100000, 999999))
+    user_id = "123" # TODO: get from auth
+    clothing_parts = {}
+    clothing_items = []
+    for category, item in outfit.items():
+        clothing_parts[CATEGORY_PART_MAPPING.get(category, "accessory")] = item["id"]
+        clothing_items.append(item["id"])
+
+    query = """
+        INSERT INTO outfits (id, user_id, name, gender, clothing_parts, clothing_items)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    
+    values = (
+        outfit_id,
+        user_id,
+        f"Recommended Outfit {outfit_id}",
+        gender,
+        json.dumps(clothing_parts),
+        json.dumps(clothing_items),
+    )
+
+    cursor.execute(query, values)
+    connection.commit()
+
+
     return {
         "query_image_id": image_id,
         "base_category": base_category,
-        "outfit": outfit
+        "outfit": outfit,
+        "outfit_id": outfit_id
     }
+
+
+from PIL import Image
+import io
+
+@router.post("/custom")
+def save_custom_outfit(outfit: dict):
+    # TODO: get user_id from auth token
+    user_id = "123"
+    outfit_id = str(random.randint(100000, 999999))
+    
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # Image composition
+    images_to_stitch = []
+    for item_id in outfit.get("clothing_items", []):
+        cursor.execute("SELECT filename FROM images WHERE id = %s", (item_id,))
+        row = cursor.fetchone()
+        if row:
+            images_to_stitch.append(f"uploads/{row['filename']}")
+
+    if images_to_stitch:
+        images = [Image.open(i) for i in images_to_stitch]
+        widths, heights = zip(*(i.size for i in images))
+
+        total_width = sum(widths)
+        max_height = max(heights)
+
+        new_im = Image.new('RGB', (total_width, max_height))
+
+        x_offset = 0
+        for im in images:
+            new_im.paste(im, (x_offset,0))
+            x_offset += im.size[0]
+        
+        output = io.BytesIO()
+        new_im.save(output, format='JPEG')
+        preview_image = output.getvalue()
+    else:
+        preview_image = None
+
+
+    query = """
+        INSERT INTO outfits (id, user_id, name, gender, clothing_parts, clothing_items, preview_image)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    
+    values = (
+        outfit_id,
+        user_id,
+        outfit.get("name"),
+        outfit.get("gender"),
+        json.dumps(outfit.get("clothing_parts")),
+        json.dumps(outfit.get("clothing_items")),
+        preview_image
+    )
+
+    cursor.execute(query, values)
+    connection.commit()
+
+    return {"message": "Outfit saved successfully", "outfit_id": outfit_id}
+
+
+@router.get("/user/{user_id}")
+def get_user_outfits(user_id: str):
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    query = "SELECT * FROM outfits WHERE user_id = %s"
+    cursor.execute(query, (user_id,))
+    outfits = cursor.fetchall()
+
+    return outfits
+
+
+@router.delete("/{outfit_id}")
+def delete_outfit(outfit_id: str):
+    connection = get_database_connection()
+    cursor = connection.cursor()
+
+    query = "DELETE FROM outfits WHERE id = %s"
+    cursor.execute(query, (outfit_id,))
+    connection.commit()
+
+    return {"message": "Outfit deleted successfully", "outfit_id": outfit_id}

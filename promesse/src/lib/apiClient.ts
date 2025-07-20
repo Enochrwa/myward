@@ -394,6 +394,31 @@ export const getSimilarItems = async (
   });
 };
 
+export const saveCustomOutfit = async (
+  outfitData: any
+): Promise<any> => {
+  return apiClient('/outfit/custom', {
+    method: 'POST',
+    body: outfitData
+  });
+};
+
+export const getUserOutfits = async (
+    userId: string
+): Promise<any> => {
+    return apiClient(`/outfit/user/${userId}`, {
+        method: 'GET'
+    });
+};
+
+export const deleteOutfit = async (
+    outfitId: string
+): Promise<any> => {
+    return apiClient(`/outfit/${outfitId}`, {
+        method: 'DELETE'
+    });
+};
+
 export const recommendOutfit = async (
   imageId: number
 ): Promise<any> => {

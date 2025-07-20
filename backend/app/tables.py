@@ -326,6 +326,23 @@ class OutfitUpdate(BaseModel):
     tags: Optional[List[str]] = None
     image_url: Optional[str] = None
 
+class OutfitCreate(BaseModel):
+    name: str
+    gender: str
+    clothing_parts: Dict[str, str]
+    clothing_items: List[str]
+    preview_image: Optional[str] = None
+
+class OutfitResponse(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    gender: str
+    clothing_parts: Dict[str, str]
+    clothing_items: List[str]
+    created_at: datetime
+    preview_image: Optional[str] = None
+
 class WeeklyPlan(BaseModel):
     id: int
     user_id: int
