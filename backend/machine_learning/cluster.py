@@ -1,7 +1,8 @@
 import numpy as np
 import json
 from sklearn.cluster import KMeans
-from app.db.database import get_database_connection
+# from ..app.db.database import get_database_connection
+from ..app.db.database import get_database_connection
 
 # ------------------ Settings ----------------------
 DEFAULT_N_CLUSTERS = 5

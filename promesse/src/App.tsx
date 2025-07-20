@@ -20,6 +20,12 @@ import ImageGallery from "./components/ImageGallery"
 import axios from 'axios'
 import ClotheClassifier from './components/ClotheClassifier';
 import OutfitRecommendations from './components/test/OutfitRecommendations';
+import OutfitPage from "./pages/OutfitPage"
+
+
+
+
+
 function App() {
 
 
@@ -36,6 +42,7 @@ function App() {
               <Route path="/outfit-builder/:imageId" element={<OutfitBuilderPage />} />
               <Route path='/classifier' element={<ClotheClassifier/>} />
               <Route path="/upload" element={<UploadForm />} />
+              <Route path="/outfit" element={<OutfitPage/>} />
               <Route path="/gallery" element={<OutfitRecommendations/>} />
               <Route path='/recommendations' element={<RenderRecommendations/>}/>
               <Route path="/dashboard" element={<DashboardPage />} />

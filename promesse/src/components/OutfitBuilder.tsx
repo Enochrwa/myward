@@ -186,7 +186,7 @@ const OutfitBuilder = ({ onSave }) => {
             </div>
 
             {isFullBodyView ? (
-              <div className="col-span-3 row-start-2 row-span-2">
+              <div className="col-span-3 row-start-2 row-span-2 relative aspect-[9/16]">
                 <DropZone
                   onDrop={(item) => handleDrop(item, 'full_body')}
                   items={playground.full_body}
@@ -194,12 +194,13 @@ const OutfitBuilder = ({ onSave }) => {
                   acceptedTypes={['full_body']}
                   onRemoveItem={() => handleRemoveItem('full_body', playground.full_body[0]?.id)}
                   onCrop={handleCrop}
-                  className="h-full"
+                  className="h-full w-full"
                 />
               </div>
             ) : (
               <>
-                <div className="col-start-2 row-start-2 row-span-2 grid grid-rows-2 gap-4">
+                {/* Centered column for Top and Bottom */}
+                <div className="col-start-2 row-start-2 row-span-2 grid grid-rows-2 gap-2">
                   <DropZone
                     onDrop={(item) => handleDrop(item, 'top')}
                     items={playground.top}
@@ -207,7 +208,7 @@ const OutfitBuilder = ({ onSave }) => {
                     acceptedTypes={['top']}
                     onRemoveItem={() => handleRemoveItem('top', playground.top[0]?.id)}
                     onCrop={handleCrop}
-                    className="h-full"
+                    className="aspect-[3/4]"
                   />
                   <DropZone
                     onDrop={(item) => handleDrop(item, 'bottom')}
@@ -216,10 +217,11 @@ const OutfitBuilder = ({ onSave }) => {
                     acceptedTypes={['bottom']}
                     onRemoveItem={() => handleRemoveItem('bottom', playground.bottom[0]?.id)}
                     onCrop={handleCrop}
-                    className="h-full"
+                    className="aspect-[3/4]"
                   />
                 </div>
-                <div className="col-start-1 row-start-2 row-span-2">
+                {/* Left column for Outerwear */}
+                <div className="col-start-1 row-start-2 row-span-2 flex items-center justify-center">
                   <DropZone
                     onDrop={(item) => handleDrop(item, 'outerwear')}
                     items={playground.outerwear}
@@ -227,7 +229,7 @@ const OutfitBuilder = ({ onSave }) => {
                     acceptedTypes={['outerwear']}
                     onRemoveItem={() => handleRemoveItem('outerwear', playground.outerwear[0]?.id)}
                     onCrop={handleCrop}
-                    className="h-full"
+                    className="h-5/6 w-5/6 aspect-[3/4]"
                   />
                 </div>
               </>

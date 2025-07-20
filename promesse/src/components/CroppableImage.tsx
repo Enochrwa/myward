@@ -29,7 +29,7 @@ const CroppableImage: React.FC<CroppableImageProps> = ({ src, onCropComplete, on
         'newFile.jpeg'
       );
       onCropComplete(croppedImageUrl);
-      onClose();
+      onClose(); // Close the dialog after applying the crop
     }
   };
 

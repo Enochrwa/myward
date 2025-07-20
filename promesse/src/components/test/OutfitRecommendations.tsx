@@ -13,6 +13,7 @@ type ItemMetadata = {
     style?: string;
     occasion?: string[] | string;
     season?: string[] | string;
+    cluster_id?: number;
 };
 
 type OutfitResponse = {
@@ -29,16 +30,13 @@ const OutfitRecommendations: React.FC = () => {
     const fetchRandomOutfit = async () => {
         setLoading(true);
         setError(null);
-
         try {
-            const randomImageId = "a3670109-581a-4e93-88bb-69d9aeb783b2"; // Replace with dynamic later
+            const randomImageId = "199f5ac0-6dd5-4152-bb9e-d400433d70b7"; // Hardcoded for now
             const response = await axios.get<OutfitResponse>(
                 `http://127.0.0.1:8000/api/outfit/recommend/${randomImageId}`
             );
             setOutfitData(response.data);
-            console.log("Outfit Response:", response.data);
-        } catch (err) {
-            console.error(err);
+        } catch {
             setError("Failed to fetch outfit.");
         } finally {
             setLoading(false);
@@ -56,11 +54,10 @@ const OutfitRecommendations: React.FC = () => {
     };
 
     return (
-        <div className="p-6">
-            <h1 className="text-3xl font-bold mb-6">Recommended Outfit</h1>
-
+        <div className="p-4">
+            <h1 className="text-2xl font-bold mb-4">Recommended Outfit</h1>
             <button
-                className="mb-8 px-6 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition"
+                className="mb-6 px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition"
                 onClick={fetchRandomOutfit}
                 disabled={loading}
             >
@@ -70,15 +67,15 @@ const OutfitRecommendations: React.FC = () => {
             {error && <p className="text-red-500">{error}</p>}
 
             {outfitData && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {Object.entries(outfitData.outfit).map(([category, item]) => (
                         <div
                             key={`${category}-${item.id}`}
-                            className="border rounded-2xl shadow-md p-6 flex flex-col items-center bg-white hover:shadow-lg transition"
+                            className="border rounded-2xl shadow-md p-4 flex flex-col items-center bg-white hover:shadow-lg transition"
                         >
-                            <h2 className="text-xl font-semibold capitalize mb-4">{category}</h2>
+                            <h2 className="text-xl font-semibold capitalize mb-2">{category}</h2>
                             <div
-                                className="w-56 h-56 flex items-center justify-center rounded-xl mb-4"
+                                className="w-48 h-48 flex items-center justify-center rounded-xl mb-2"
                                 style={{ backgroundColor: item.dominant_color || "#f0f0f0" }}
                             >
                                 <img
@@ -87,8 +84,9 @@ const OutfitRecommendations: React.FC = () => {
                                     className="max-w-full max-h-full object-contain rounded"
                                 />
                             </div>
-                            <p className="text-gray-700 font-medium">Original: {item.original_name || "Unknown"}</p>
-                            <p className="text-gray-500">Category: {item.category}</p>
+                            <p className="text-gray-600">Original: {item.original_name || "Unknown"}</p>
+                            <p className="text-gray-600">Category: {item.category}</p>
+                            <p className="text-gray-600">Cluster: {item.cluster_id ?? "N/A"}</p>
                             <p className="text-gray-500">Season: {renderArrayOrString(item.season)}</p>
                             <p className="text-gray-500">Occasion: {renderArrayOrString(item.occasion)}</p>
                             <p className="text-gray-500">Style: {item.style || "N/A"}</p>
