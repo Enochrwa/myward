@@ -106,7 +106,7 @@ const WeatherOccasionRecommender = ({ wardrobeItems }) => {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}>
                     <Card className="mb-6 shadow-md border-0 rounded-xl">
                         <CardHeader>
-                            <CardTitle className="text-xl font-semibold text-gray-800">
+                            <CardTitle className="text-xl font-semibold text-gray-400">
                                 Current Weather in {city}
                             </CardTitle>
                         </CardHeader>
@@ -116,7 +116,7 @@ const WeatherOccasionRecommender = ({ wardrobeItems }) => {
                                 <p className="text-gray-600">Temperature</p>
                             </div>
                             <div>
-                                <p className="text-lg font-semibold text-gray-800">{weather.weather_condition}</p>
+                                <p className="text-lg font-semibold text-gray-400">{weather.weather_condition}</p>
                                 <p className="text-gray-600 capitalize">{weather.description}</p>
                             </div>
                             <div>

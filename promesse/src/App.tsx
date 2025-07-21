@@ -52,21 +52,21 @@ function App() {
       fetchImages();
     }, []);
 
-    useEffect(() =>{
-      (
-        async () =>{
-          try{
+    // useEffect(() =>{
+    //   (
+    //     async () =>{
+    //       try{
 
-            const response = await axios.get(`http://127.0.0.1:8000/api/other/weather/${"Kigali"}`);
+    //         const response = await axios.get(`http://127.0.0.1:8000/api/other/weather/${"Kigali"}`);
             
-            console.log("Weather", response?.data)
-        } catch (error) {
+    //         console.log("Weather", response?.data)
+    //     } catch (error) {
             
-            console.error("Error fetching weather data:", error);
-        }
-        }
-      )()
-    },[])
+    //         console.error("Error fetching weather data:", error);
+    //     }
+    //     }
+    //   )()
+    // },[])
 
   return (
     <ThemeProvider>

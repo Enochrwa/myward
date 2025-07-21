@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '@/types/userTypes';
-import { getAllUsers, updateUser, deleteUser } from '@/lib/admin';
+import { getAllUsers, updateUser, deleteUser, UserUpdatePayload } from '@/lib/admin';
 
 export const useUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -22,10 +22,10 @@ export const useUsers = () => {
     fetchUsers();
   }, []);
 
-  const handleUpdateUser = async (userId: string, updates: Partial<User>) => {
+  const handleUpdateUser = async (userId: string, updates: UserUpdatePayload) => {
     try {
       const updatedUser = await updateUser(userId, updates);
-      setUsers(users.map((user) => (user.id === userId ? updatedUser : user)));
+      setUsers(users.map((user) => (user.id.toString() === userId ? { ...user, ...updatedUser } : user)));
     } catch (err) {
       setError(err as Error);
     }

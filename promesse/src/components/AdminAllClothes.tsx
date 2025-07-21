@@ -64,7 +64,9 @@ const AdminAllClothes = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
           />
-          <Select onValueChange={setSelectedUser} value={selectedUser || ''}>
+          {
+            users?.length > 0 &&
+            <Select onValueChange={setSelectedUser} value={selectedUser || ''}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by user" />
             </SelectTrigger>
@@ -77,6 +79,7 @@ const AdminAllClothes = () => {
               ))}
             </SelectContent>
           </Select>
+          }
         </div>
       </CardHeader>
       <CardContent>
