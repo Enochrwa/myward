@@ -17,7 +17,8 @@ from ..model import (
     ColorAnalysis, ItemClassification, Feedback, WeatherData
 )
 from ..db.database import get_db
-
+import os
+from ..services.occasion_weather_outfits import WeatherService
 
 router = APIRouter(prefix="/other")
 
@@ -132,26 +133,24 @@ def generate_recommendations(
         }
     }
 
+
+
 # WEATHER ROUTES
-@router.get("/weather/{location}")
+@router.get("/weather/{city}")
 def get_weather_data(
-    location: str,
-    date: Optional[date] = None,
+    city: str,
     db: Session = Depends(get_db)
 ):
-    query = db.query(WeatherData).filter(WeatherData.location == location)
-    
-    if date:
-        query = query.filter(WeatherData.date == date)
-    else:
-        # Get latest weather data
-        query = query.order_by(desc(WeatherData.date))
-    
-    weather = query.first()
-    if not weather:
-        raise HTTPException(status_code=404, detail="Weather data not found")
-    
-    return weather
+    api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="OpenWeatherMap API key not configured")
+        
+    weather_service = WeatherService(api_key)
+    try:
+        weather = weather_service.get_current_weather(city)
+        return weather
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/weather/")
 def create_weather_data(

@@ -53,13 +53,18 @@ class ClothingItem:
 
 @dataclass
 class WeatherData:
-    """Weather information from OpenWeatherAPI"""
     temperature: float
     feels_like: float
     humidity: int
+    pressure: int
+    visibility: int
+    wind_speed: float
     weather_condition: str
     description: str
-    wind_speed: float
+    cloud_coverage: int
+    sunrise: int
+    sunset: int
+
     
 class WeatherService:
     """Service to fetch weather data from OpenWeatherAPI"""
@@ -74,7 +79,7 @@ class WeatherService:
         params = {
             'q': location,
             'appid': self.api_key,
-            'units': 'celsius'
+            'units': 'metric'  # use 'metric' not 'celsius'
         }
         
         try:
@@ -86,12 +91,18 @@ class WeatherService:
                 temperature=data['main']['temp'],
                 feels_like=data['main']['feels_like'],
                 humidity=data['main']['humidity'],
+                pressure=data['main']['pressure'],
+                visibility=data.get('visibility', 10000),  # default fallback
+                wind_speed=data['wind']['speed'],
                 weather_condition=data['weather'][0]['main'],
                 description=data['weather'][0]['description'],
-                wind_speed=data['wind']['speed']
+                cloud_coverage=data['clouds']['all'],
+                sunrise=data['sys']['sunrise'],
+                sunset=data['sys']['sunset']
             )
         except requests.RequestException as e:
             raise Exception(f"Failed to fetch weather data: {e}")
+
 
 @dataclass
 class OutfitRecommendation:

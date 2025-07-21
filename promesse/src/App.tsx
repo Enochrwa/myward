@@ -25,7 +25,7 @@ import OutfitPage from "./pages/OutfitPage"
 import WardrobeAnalytics from './components/WardrobeAnalytics';
 import WardrobeAndOutfits from './components/WardrobeAndOutfits';
 import DisplayClothes from "./components/DisplayClothes"
-import OccasionWeatherRecommendations from './components/test/OccasionRecommendations'
+import WeatherOccasionRecommender from './components/WeatherOccasionRecommender';
 
 
 function App() {
@@ -52,6 +52,22 @@ function App() {
       fetchImages();
     }, []);
 
+    useEffect(() =>{
+      (
+        async () =>{
+          try{
+
+            const response = await axios.get(`http://127.0.0.1:8000/api/other/weather/${"Kigali"}`);
+            
+            console.log("Weather", response?.data)
+        } catch (error) {
+            
+            console.error("Error fetching weather data:", error);
+        }
+        }
+      )()
+    },[])
+
   return (
     <ThemeProvider>
       <AuthProvider> {/* Added AuthProvider wrapper */}
@@ -63,7 +79,7 @@ function App() {
               <Route path="/" element={<IndexPage />}/>
               <Route path='/clothes' element={<DisplayClothes/>}  />
               <Route path="/outfit-builder/:imageId" element={<OutfitBuilderPage />} />
-              <Route path='/weather' element={<OccasionWeatherRecommendations wardrobeItems={items} />} />
+              <Route path='/weather' element={<WeatherOccasionRecommender wardrobeItems={items} />} />
               <Route path='/classifier' element={<ClotheClassifier/>} />
               <Route path='/saved-outfits' element={<WardrobeAndOutfits/>} />
               <Route path="/upload" element={<UploadForm />} />
