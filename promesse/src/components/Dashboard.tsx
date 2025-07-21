@@ -19,6 +19,7 @@ import WeeklyPlanner from './WeeklyPlanner';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import AdvancedAnalyticsModal from './AdvancedAnalyticsModal';
 
 const controlledVocabularies = {
   style: [
@@ -99,6 +100,7 @@ const Dashboard = () => {
   const [batchProgress, setBatchProgress] = useState<{ total: number; completed: number; failed: number } | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [metadata, setMetadata] = useState<ImageMetadata[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -208,7 +210,7 @@ const Dashboard = () => {
       title: 'View Analytics',
       description: 'Insights into your style patterns',
       icon: TrendingUp,
-      href: '/wardrobe?action=analytics',
+      onClick: () => setIsAnalyticsModalOpen(true),
       gradient: 'from-orange-500 to-red-600',
       bgGradient: 'from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20'
     }
@@ -287,9 +289,10 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickActions.map((action, index) => {
               const Icon = action.icon;
+              const CardComponent = action.href ? Link : 'div';
               return (
-                <Link key={index} to={action.href}>
-                  <Card className={`h-full hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br ${action.bgGradient} border-0 shadow-lg`}>
+                <CardComponent key={index} to={action.href} onClick={action.onClick}>
+                  <Card className={`h-full hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br ${action.bgGradient} border-0 shadow-lg cursor-pointer`}>
                     <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
                       <div className={`w-12 h-12 bg-gradient-to-br ${action.gradient} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
                         <Icon size={24} className="text-white" />
@@ -297,7 +300,7 @@ const Dashboard = () => {
                       <h3 className="font-semibold text-gray-800 dark:text-gray-200">{action.title}</h3>
                     </CardContent>
                   </Card>
-                </Link>
+                </CardComponent>
               );
             })}
           </div>
@@ -316,6 +319,8 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         )}
+
+        <AdvancedAnalyticsModal isOpen={isAnalyticsModalOpen} onClose={() => setIsAnalyticsModalOpen(false)} />
 
         {/* Call to Action */}
         <div className="mt-12 text-center">

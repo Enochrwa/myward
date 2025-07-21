@@ -223,6 +223,18 @@ def get_user_images(user = Depends(get_current_user)):
         item['image_url'] = build_image_url(item['filename'])
     return images
 
+@router.get("/user-items")
+def get_user_images(user = Depends(get_current_user)):
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM images WHERE user_id = %s"
+    cursor.execute(query)
+    
+    images = cursor.fetchall()
+    for item in images:
+        item['image_url'] = build_image_url(item['filename'])
+    return images
+
 
 
 @router.post("/{outfit_id}/toggle-favorite")

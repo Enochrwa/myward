@@ -30,7 +30,7 @@ interface Props {
 const occasions = ["Work", "Casual", "Party", "Formal", "Date", "Everyday"];
 const seasons = ["All Season", "Spring", "Summer", "Fall", "Winter"];
 
-const SmartOutfitRecommendations: React.FC<Props> = ({ wardrobeItems, userId }) => {
+const SmartOutfitRecommendations: React.FC<Props> = ({ wardrobeItems}) => {
     const [outfits, setOutfits] = useState<Outfit[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

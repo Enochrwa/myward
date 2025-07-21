@@ -9,7 +9,7 @@ export default function WardrobeTestPage() {
             (
                 async () =>{
                     try {
-                        const response = await axios.get("http://127.0.0.1:8000/api/outfit/user-clothes")
+                        const response = await axios.get("http://127.0.0.1:8000/api/outfit/user-items")
                         if(response?.data){
                             setWardrobeItems(response?.data)
                         }
