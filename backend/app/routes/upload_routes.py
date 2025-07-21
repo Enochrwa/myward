@@ -717,6 +717,18 @@ async def get_analytics():
         cursor.execute("SELECT dominant_color, COUNT(*) as count FROM images GROUP BY dominant_color ORDER BY count DESC LIMIT 10")
         color_distribution = cursor.fetchall()
         
+        # Get category distribution
+        cursor.execute("SELECT category, COUNT(*) as count FROM images GROUP BY category ORDER BY count DESC")
+        category_distribution = cursor.fetchall()
+
+        # Get style distribution
+        cursor.execute("SELECT style, COUNT(*) as count FROM images GROUP BY style ORDER BY count DESC")
+        style_distribution = cursor.fetchall()
+
+        # Get season distribution
+        cursor.execute("SELECT season, COUNT(*) as count FROM images GROUP BY season ORDER BY count DESC")
+        season_distribution = cursor.fetchall()
+        
         # Get recent batch activity
         cursor.execute("""
             SELECT batch_id, total_images, successful_images, failed_images, upload_date, processing_time
@@ -750,6 +762,9 @@ async def get_analytics():
                 "average_batch_size": round(avg_batch_size, 2)
             },
             "color_distribution": color_distribution,
+            "category_distribution": category_distribution,
+            "style_distribution": style_distribution,
+            "season_distribution": season_distribution,
             "recent_batches": recent_batches,
             "upload_trends": upload_trends
         }
