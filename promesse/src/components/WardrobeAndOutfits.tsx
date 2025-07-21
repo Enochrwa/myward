@@ -40,7 +40,7 @@ export default function WardrobeAndOutfits() {
       .catch((err) => console.error("Wardrobe fetch error:", err));
 
     axios
-      .get(`http://127.0.0.1:8000/api/outfit/user/${user.id}`, {
+      .get(`http://127.0.0.1:8000/api/outfit/user`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -97,7 +97,7 @@ export default function WardrobeAndOutfits() {
     })
       .then(() => {
         setSelected([]);
-        return axios.get(`http://127.0.0.1:8000/api/outfit/user/${user?.id}`, {
+        return axios.get(`http://127.0.0.1:8000/api/outfit/user`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

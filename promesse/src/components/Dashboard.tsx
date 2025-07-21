@@ -230,7 +230,7 @@ const Dashboard = () => {
         </div>
 
         {/* Upload and Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-8">
           {/* Upload Area */}
           <Card 
             className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-white hover:border-blue-400 transition-colors cursor-pointer"
@@ -256,7 +256,7 @@ const Dashboard = () => {
               </div>
             ) : (
               <>
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <Upload className="w-14 h-14 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Upload Your Clothes</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Drop images here or click to browse. They'll be automatically categorized.

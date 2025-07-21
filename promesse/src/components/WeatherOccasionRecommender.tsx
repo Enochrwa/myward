@@ -32,6 +32,7 @@ const WeatherOccasionRecommender = ({ wardrobeItems }) => {
                 wardrobe_items: wardrobeItems
             });
             setOutfits(response.data);
+            console.log("Weather outfits: ", response?.data)
         } catch (error) {
             setError("Error fetching outfit recommendations.");
             console.error(error);

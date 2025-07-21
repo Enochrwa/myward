@@ -113,7 +113,7 @@ def save_custom_outfit(outfit: dict, user: User = Depends(get_current_user)):
     # Stitch preview image
     images_to_stitch = []
     for item_id in outfit.get("clothing_items", []):
-        cursor.execute("SELECT filename FROM images WHERE id = %s user_id = %s", (item_id,user_id))
+        cursor.execute("SELECT filename FROM images WHERE id = %s AND user_id = %s", (item_id,user_id))
         row = cursor.fetchone()
         if row:
             images_to_stitch.append(f"uploads/{row['filename']}")
