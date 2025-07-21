@@ -4,6 +4,7 @@ import { useUsers } from '../hooks/useUsers';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { User } from '../types/userTypes';
+import { UserUpdatePayload } from '../lib/admin';
 
 const AdminUserManagement = () => {
   const { users, loading, error, updateUser, deleteUser } = useUsers();
@@ -18,7 +19,9 @@ const AdminUserManagement = () => {
   };
 
   const handleDeleteUser = (userId: number) => {
-    deleteUser(userId.toString());
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      deleteUser(userId.toString());
+    }
   };
 
   return (
@@ -32,7 +35,8 @@ const AdminUserManagement = () => {
             <TableHead>Email</TableHead>
             <TableHead>Full Name</TableHead>
             <TableHead>Gender</TableHead>
-            <TableHead>Admin</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Admin Actions</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -44,6 +48,7 @@ const AdminUserManagement = () => {
               <TableCell>{user.email}</TableCell>
               <TableCell>{user.full_name}</TableCell>
               <TableCell>{user.gender}</TableCell>
+              <TableCell>{user.role}</TableCell>
               <TableCell>
                 <Button onClick={() => handleToggleAdmin(user)}>
                   {user.role === "admin" ? 'Revoke Admin' : 'Make Admin'}

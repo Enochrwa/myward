@@ -2,23 +2,48 @@
 import apiClient from './apiClient';
 import { User } from '@/types/userTypes';
 
+// This type should align with the backend's UserUpdate schema
+export interface UserUpdatePayload {
+  username?: string;
+  email?: string;
+  full_name?: string;
+  gender?: string;
+  role?: string;
+}
+
 export const getAllUsers = async (): Promise<User[]> => {
-  return apiClient('/admin/users');
+  try {
+    const response = await apiClient('/admin/users');
+    return response;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
 };
 
 export const updateUser = async (
   userId: string,
-  updates: Partial<User>  // or: { role?: string }
+  updates: UserUpdatePayload
 ): Promise<User> => {
-  return apiClient(`/admin/users/${userId}`, {
-    method: 'PUT',
-    body: updates,
-  });
+  try {
+    const response = await apiClient(`/admin/users/${userId}`, {
+      method: 'PUT',
+      body: updates,
+    });
+    return response;
+  } catch (error) {
+    console.error(`Error updating user ${userId}:`, error);
+    throw error;
+  }
 };
 
-
 export const deleteUser = async (userId: string): Promise<void> => {
-  return apiClient(`/admin/users/${userId}`, {
-    method: 'DELETE',
-  });
+  try {
+    await apiClient(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error(`Error deleting user ${userId}:`, error);
+    throw error;
+  }
 };
