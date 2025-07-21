@@ -1,5 +1,5 @@
 
-from fastapi import UploadFile, APIRouter, File, Form, HTTPException, Query
+from fastapi import UploadFile, APIRouter, File, Depends,Form, HTTPException, Query
 from typing import Optional, List
 import uuid
 import os
@@ -12,8 +12,9 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 import os
 from dotenv import load_dotenv
+from ..security import get_current_user
 from mysql.connector import Error
-
+from ..model import User
 import asyncio
 
 
@@ -54,7 +55,7 @@ async def upload_single_image(
     gender: Optional[str] = Form(None),
     material: Optional[str] = Form(None),
     pattern: Optional[str] = Form(None),
-    user_id: Optional[int] = Form(None)
+    current_user: User = Depends(get_current_user)
 ):
     """Upload and process a single image (legacy endpoint)"""
     try:
@@ -76,7 +77,7 @@ async def upload_single_image(
             "gender": gender,
             "material": material,
             "pattern": pattern,
-            "user_id": user_id
+            "user_id":  current_user.id
         }
         file_data = (contents, file.filename, file.filename)
         result = process_single_image(file_data, extra_metadata=extra_metadata)
@@ -233,7 +234,7 @@ def recommend_similar(image_id: str, top_k: int = 5):
 async def upload_multiple_images(
     files: List[UploadFile] = File(...),
     metadatas: Optional[str] = Form(None), # Expecting a JSON string
-    user_id: Optional[int] = Form(None)
+    current_user: User = Depends(get_current_user)
 ):
     """Upload and process multiple images (1-20 images)"""
     start_time = datetime.now()
@@ -275,7 +276,7 @@ async def upload_multiple_images(
         
         for i, file_data in enumerate(file_data_list):
             extra_metadata = metadata_list[i] if i < len(metadata_list) else {}
-            extra_metadata['user_id'] = user_id
+            extra_metadata['user_id'] = current_user.id
             task = loop.run_in_executor(executor, process_single_image, file_data, batch_id, extra_metadata)
             processing_tasks.append(task)
         
@@ -441,7 +442,7 @@ async def get_batches(
             connection.close()
 
 @router.post("/update-category")
-async def update_category(data: UpdateCategoryRequest):
+async def update_category(data: UpdateCategoryRequest,current_user: User = Depends(get_current_user)):
     """Update the category of an image"""
     try:
         connection = get_database_connection()
@@ -450,14 +451,13 @@ async def update_category(data: UpdateCategoryRequest):
         update_query = """
         UPDATE images
         SET category = %s, category_confirmed = TRUE
-        WHERE id = %s
+        WHERE id = %s AND user_id = %s
         """
-        
-        cursor.execute(update_query, (data.new_category, data.image_id))
+        cursor.execute(update_query, (data.new_category, data.image_id, current_user.id))
         connection.commit()
 
         if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Image not found")
+            raise HTTPException(status_code=404, detail="Image not found or not owned by you")
 
         return {"message": "Category updated successfully"}
 
