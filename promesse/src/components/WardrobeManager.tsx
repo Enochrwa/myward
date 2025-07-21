@@ -26,6 +26,7 @@ import { WardrobeItemResponse, WardrobeItemCreate, WardrobeItemUpdate, Outfit } 
 import SingleGridWardrobe from './CategorizedWardrobe';
 import OutfitBuilder from './OutfitBuilder';
 import SmartOutFits from '@/components/SmartOutFits';
+import WeeklyPlanner from './WeeklyPlanner';
 
 const WardrobeManager = () => {
     // const { token } = useAuth();
@@ -291,16 +292,16 @@ const WardrobeManager = () => {
               </p>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <Button onClick={() => setIsAddModalOpen(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-owis-purple to-owis-bronze hover:from-owis-purple-dark hover:to-owis-bronze text-owis-forest">
+              <Button className="flex-1 sm:flex-none bg-gradient-to-r from-owis-purple to-owis-bronze hover:from-owis-purple-dark hover:to-owis-bronze text-owis-forest">
                 
                   <Link to={"/dashboard"}>
-                    <Plus size={16} className="mr-2" /> Add Item
+                     Add Item
                   </Link>
               </Button>
               {/* <Button onClick={() => setIsCreateOutfitOpen(true)} variant="outline" className="flex-1 sm:flex-none border-owis-forest text-owis-forest hover:bg-owis-forest hover:text-white">
                 <Star size={16} className="mr-2" /> Create Outfit
               </Button> */}
-              <Button
+              {/* <Button
                 onClick={async () => {
                   try {
                     await apiClient.clusterImages();
@@ -313,7 +314,7 @@ const WardrobeManager = () => {
                 className="flex-1 sm:flex-none border-owis-forest text-owis-forest hover:bg-owis-forest hover:text-white"
               >
                 <Sparkles size={16} className="mr-2" /> Cluster Items
-              </Button>
+              </Button> */}
             </div>
           </div>
 
@@ -322,6 +323,7 @@ const WardrobeManager = () => {
               <TabsTrigger value="wardrobe">My Items</TabsTrigger>
               {/* <TabsTrigger value="ml-analysis"><Sparkles className="h-4 w-4 mr-1" /> AI Analysis</TabsTrigger> */}
               <TabsTrigger value="recommendations"><Target className="h-4 w-4 mr-1" /> Smart Outfits</TabsTrigger>
+              <TabsTrigger value="weekly-planner"><Calendar className="h-4 w-4 mr-1" /> Weekly Planner</TabsTrigger>
               {/* <TabsTrigger value="outfit-builder"><Palette className="h-4 w-4 mr-1" /> Outfit Builder</TabsTrigger> */}
               <TabsTrigger value="similar-items"><Palette className="h-4 w-4 mr-1" /> Find Similar</TabsTrigger>
               {/* <TabsTrigger value="tools">Tools</TabsTrigger> */}
@@ -392,6 +394,9 @@ const WardrobeManager = () => {
             {/* <TabsContent value="ml-analysis"><MLAnalysisComponent onAnalysisComplete={() => {}} /></TabsContent> */}
             <TabsContent value="recommendations">
               <SmartOutFits/>
+            </TabsContent>
+            <TabsContent value="weekly-planner">
+              <WeeklyPlanner />
             </TabsContent>
             {/* <TabsContent value="outfit-builder">
               <OutfitBuilder items={items} onSave={handleSaveOutfit} />

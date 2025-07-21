@@ -26,7 +26,7 @@ import WardrobeAnalytics from './components/WardrobeAnalytics';
 import WardrobeAndOutfits from './components/WardrobeAndOutfits';
 import DisplayClothes from "./components/DisplayClothes"
 import WeatherOccasionRecommender from './components/WeatherOccasionRecommender';
-
+import WeeklyPlanner from './components/WeeklyPlanner';
 
 function App() {
 
@@ -81,6 +81,7 @@ function App() {
               <Route path="/outfit-builder/:imageId" element={<OutfitBuilderPage />} />
               <Route path='/weather' element={<WeatherOccasionRecommender wardrobeItems={items} />} />
               <Route path='/classifier' element={<ClotheClassifier/>} />
+              <Route path='/weekly' element={<WeeklyPlanner/>} />
               <Route path='/saved-outfits' element={<WardrobeAndOutfits/>} />
               <Route path="/upload" element={<UploadForm />} />
               <Route path="/outfit" element={<OutfitPage/>} />

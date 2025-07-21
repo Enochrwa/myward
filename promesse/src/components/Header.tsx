@@ -41,7 +41,7 @@ const Header = () => {
     const wardrobeFeatures = [
       { name: 'My Closet', href: '/wardrobe', description: 'Browse and organize your clothing items', icon: Heart },
   
-      { name: 'Plan Week', href: '/wardrobe?action=plan-week', description: 'Weekly outfit planning calendar', icon: Calendar },
+      // { name: 'Plan Week', href: '/wardrobe?action=plan-week', description: 'Weekly outfit planning calendar', icon: Calendar },
        {name: "Outfits", href: "/saved-outfits", description: "See All Your Saved Outfits",icon: Brain},
       {name: "Occasion & Weather", href: "/weather", description: "Get recommendations according to your occasions ad weather", icon: CloudRain}
     ];

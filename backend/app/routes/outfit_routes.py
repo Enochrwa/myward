@@ -359,3 +359,45 @@ def recommend_weather_occasion(request: WeatherOccasionRequest):
 
     return result
 
+
+class WeeklyPlanRequest(BaseModel):
+    location: str
+    weekly_plan: Dict[str, Dict[str, str]]
+    wardrobe_items: List[Dict[str, Any]]
+
+
+@router.post("/weekly-plan")
+def plan_weekly_outfits_route(request: WeeklyPlanRequest):
+    api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Weather API key not configured.")
+
+    weather_service = WeatherService(api_key)
+    recommender = SmartOutfitRecommender(weather_service)
+    recommender.load_wardrobe(request.wardrobe_items)
+
+    weekly_outfits = recommender.plan_weekly_outfits(
+        weekly_plan=request.weekly_plan,
+        location=request.location
+    )
+
+    # Format response
+    response_data = {}
+    for date, outfits in weekly_outfits.items():
+        response_data[date] = [
+            {
+                "score": outfit.overall_score(),
+                "items": [
+                    {
+                        "id": item.id,
+                        "category": item.category,
+                        "image_url": build_image_url(item.filename)
+                    }
+                    for item in outfit.items
+                ]
+            }
+            for outfit in outfits
+        ]
+
+    return response_data
+

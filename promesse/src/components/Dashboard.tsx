@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import ClotheAnalytics from './ClotheAnalytics';
+import WeeklyPlanner from './WeeklyPlanner';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -302,16 +303,19 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Categorized Wardrobe Display */}
-        <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl text-gray-800 dark:text-gray-200">Your Wardrobe</CardTitle>
-            <CardDescription>All your clothes, automatically categorized by AI.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ClotheAnalytics />
-          </CardContent>
-        </Card>
+        {new URLSearchParams(window.location.search).get('action') === 'plan-week' ? (
+          <WeeklyPlanner />
+        ) : (
+          <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-2xl text-gray-800 dark:text-gray-200">Your Wardrobe</CardTitle>
+              <CardDescription>All your clothes, automatically categorized by AI.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ClotheAnalytics />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Call to Action */}
         <div className="mt-12 text-center">
