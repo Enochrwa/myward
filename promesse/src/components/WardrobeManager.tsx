@@ -57,7 +57,7 @@ const WardrobeManager = () => {
     const fetchSavedOutfits = async () => {
         if (!user) return;
         try {
-            const outfits = await apiClient.getUserOutfits(user.id);
+            const outfits = await apiClient.getUserOutfits();
             setSavedOutfits(outfits);
         } catch (err) {
             console.error(err);

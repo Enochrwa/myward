@@ -10,11 +10,16 @@ export default function WardrobeTestPage() {
             (
                 async () =>{
                     try {
-                        const response = apiClient("/outfit/user-items")
-                        if(response?.data){
-                            setWardrobeItems(response?.data)
-                        }
-                        console.log("wardrobe response: ", response)
+                        const token = localStorage.getItem("token"); // or use the exact key you stored the token with
+
+                        const allItems = await axios.get("http://127.0.0.1:8000/api/images", {
+                            headers: {
+                            Authorization: `Bearer ${token}`,
+                            },
+                        });
+
+                        console.log("Wardrobe Items: ", allItems?.data?.images)
+                        setWardrobeItems(allItems?.data?.images)
                     } catch (error: any) {
                         console.error("Error fetching wardrobe Items: ", error)
                     }

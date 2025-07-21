@@ -423,9 +423,8 @@ export const saveOutfit = async (
 };
 
 export const getUserOutfits = async (
-    userId: string
 ): Promise<any> => {
-    return apiClient(`/outfit/user/${userId}`, {
+    return apiClient(`/outfit/user`, {
         method: 'GET'
     });
 };

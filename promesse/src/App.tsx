@@ -50,13 +50,13 @@ function App() {
         try {
           const token = localStorage.getItem("token"); // or use the exact key you stored the token with
 
-          const allItems = await axios.get("http://127.0.0.1:8000/api/outfit/user", {
+          const allItems = await axios.get("http://127.0.0.1:8000/api/outfit/user-items", {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           });
 
-          console.log("All Items: ", allItems.data);
+          setItems(allItems?.data)
         } catch (error) {
           console.error("Error fetching images", error);
         }
@@ -105,7 +105,7 @@ function App() {
               <Route path='/clothes' element={<DisplayClothes/>}  />
               <Route path='/login' element={<LoginPage isOpen={ isOpen} onClose={onClose}/>} />
               <Route path="/outfit-builder/:imageId" element={<OutfitBuilderPage />} />
-              {/* <Route path='/weather' element={<WeatherOccasionRecommender wardrobeItems={items || []} />} /> */}
+              <Route path='/weather' element={<WeatherOccasionRecommender wardrobeItems={items || []} />} />
               <Route path='/classifier' element={<ClotheClassifier/>} />
               <Route path='/weekly' element={<WeeklyPlanner/>} />
               <Route path='/saved-outfits' element={<WardrobeAndOutfits/>} />

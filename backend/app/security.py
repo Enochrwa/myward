@@ -15,12 +15,9 @@ from .db.database import get_db
 
 # ──────🔐 Load Environment Variables ──────
 load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY") or "development-secret-key-change-in-production-12345678901234567890"
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-if not os.getenv("SECRET_KEY"):
-    print("⚠️ Warning: Using default SECRET_KEY for development. Set SECRET_KEY in .env for production!")
 
 # ──────🔒 Password Hashing ──────
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -69,6 +66,8 @@ async def get_current_user(
     )
 
     token_data = decode_access_token(token)
+    print(f"Received Token: {token}")
+    print("TOken data: ", token_data)
     if token_data is None or token_data.username is None:
         raise credentials_exception
 

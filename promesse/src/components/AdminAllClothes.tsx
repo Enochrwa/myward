@@ -3,7 +3,7 @@ import apiClient from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import axios from 'axios';
 interface Clothe {
   id: string;
   filename: string;
@@ -26,6 +26,17 @@ const AdminAllClothes = () => {
         setLoading(true);
         const response = await apiClient('/outfit/user-clothes');
         setClothes(response);
+
+        // const token = localStorage.getItem("token");
+        // const allItems = await axios.get("http://127.0.0.1:8000/api/outfit/user-clothes", {
+        //       headers: {
+        //       Authorization: `Bearer ${token}`,
+        //       },
+        //   });
+
+        //   console.log('Response: ', response)
+
+        // console.log("Wardrobe Items: ", allItems?.data?.images)
         setError(null);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch clothes');
@@ -66,12 +77,12 @@ const AdminAllClothes = () => {
           />
           {
             users?.length > 0 &&
-            <Select onValueChange={setSelectedUser} value={selectedUser || ''}>
+            <Select onValueChange={(val) => setSelectedUser(val === 'all' ? null : val)} value={selectedUser ?? 'all'}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by user" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Users</SelectItem>
+              <SelectItem value="all">All Users</SelectItem>
               {users.map((user) => (
                 <SelectItem key={user} value={user}>
                   {user}
@@ -79,6 +90,7 @@ const AdminAllClothes = () => {
               ))}
             </SelectContent>
           </Select>
+
           }
         </div>
       </CardHeader>

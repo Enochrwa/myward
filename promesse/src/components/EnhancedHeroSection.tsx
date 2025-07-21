@@ -98,14 +98,14 @@ const EnhancedHeroSection = () => {
               </Button>
             </Link>
             
-            <Link to="/ai-studio" className="w-full sm:w-auto">
+            <Link to="/saved-outfits" className="w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="lg" 
                 className="w-full sm:w-auto px-6 xs:px-8 sm:px-12 py-4 xs:py-5 sm:py-6 text-sm xs:text-base sm:text-xl font-bold rounded-xl xs:rounded-2xl border-2 border-white/40 text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-300 group shadow-lg"
               >
                 <Zap className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 mr-2 xs:mr-3 group-hover:text-emerald-400 transition-colors" />
-                <span className="hidden xs:inline">Explore AI Studio</span>
+                <span className="hidden xs:inline">Explore Your Outfits </span>
                 <span className="xs:hidden">AI Studio</span>
               </Button>
             </Link>

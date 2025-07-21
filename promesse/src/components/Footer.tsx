@@ -22,12 +22,6 @@ const Footer = () => {
               Revolutionizing fashion management through AI-powered intelligence, 
               sustainable practices, and global community connection.
             </p>
-            <Button 
-              size="lg"
-              className="bg-owis-purple hover:bg-owis-bronze text-owis-forest font-semibold owis-hover"
-            >
-              Join the Revolution
-            </Button>
           </div>
 
           {/* Links */}

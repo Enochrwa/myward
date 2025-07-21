@@ -24,20 +24,34 @@ export default function WardrobeAndOutfits() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [savedOutfits, setSavedOutfits] = useState<any[]>([]);
 
+  
   useEffect(() => {
     if (!user?.id) return;
 
-    axios
-      .get(`http://127.0.0.1:8000/api/wardrobe/user/${user.id}`)
-      .then((res) => setItems(res.data));
+    const token = localStorage.getItem("token");
 
     axios
-      .get(`http://127.0.0.1:8000/api/outfit/user/${user.id}`)
+      .get(`http://127.0.0.1:8000/api/wardrobe/user/${user.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((res) => setItems(res.data))
+      .catch((err) => console.error("Wardrobe fetch error:", err));
+
+    axios
+      .get(`http://127.0.0.1:8000/api/outfit/user/${user.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => {
         console.log("Saved outfits: ", res.data);
         setSavedOutfits(res.data);
-      });
+      })
+      .catch((err) => console.error("Outfits fetch error:", err));
   }, [user?.id]);
+
 
   const toggleFavorite = (id: string) => {
     setFavorites((prev) =>
@@ -66,6 +80,8 @@ export default function WardrobeAndOutfits() {
     .join(",")}`;
 
   const saveOutfit = () => {
+    const token = localStorage.getItem("token");
+
     fetch("http://127.0.0.1:8000/api/outfit/custom", {
       method: "POST",
       body: JSON.stringify({
@@ -74,11 +90,18 @@ export default function WardrobeAndOutfits() {
         clothing_items: selected.map((i) => i.id),
         clothing_parts: selected.map((i) => i.clothing_part),
       }),
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
     })
       .then(() => {
         setSelected([]);
-        return axios.get(`http://127.0.0.1:8000/api/outfit/user/${user?.id}`);
+        return axios.get(`http://127.0.0.1:8000/api/outfit/user/${user?.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
       })
       .then((res) => setSavedOutfits(res.data))
       .catch(console.error);

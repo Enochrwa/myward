@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, Image } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
-
+import axios from 'axios';
 interface ImageMetadata {
   id: string;
   filename: string;
@@ -24,8 +24,17 @@ const ClotheAnalytics: React.FC = () => {
   const fetchImages = async () => {
     setLoading(true);
     try {
-      const response = await apiClient('/images/?limit=100');
-      setImages(response?.data?.images || []);
+  
+
+      const token = localStorage.getItem("token"); // or use the exact key you stored the token with
+
+          const allItems = await axios.get("http://127.0.0.1:8000/api/images", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+      setImages(allItems?.data?.images);
+      console.log("Fetched Images: ", allItems?.data)
     } catch (error) {
       console.error('Error fetching images:', error);
     } finally {
@@ -67,7 +76,7 @@ const ClotheAnalytics: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-            {images.map((image) => (
+            {images?.map((image) => (
               <div
                 key={image.id}
                 className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-xl overflow-hidden hover:shadow-2xl hover:scale-[1.02] hover:border-blue-500/50 transition-all duration-300 cursor-pointer group"

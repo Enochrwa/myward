@@ -195,14 +195,6 @@ const Dashboard = () => {
       bgGradient: 'from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20'
     },
     {
-      title: 'Plan Week',
-      description: 'Organize your outfits for the week',
-      icon: Calendar,
-      href: '/wardrobe?action=plan-week',
-      gradient: 'from-blue-500 to-cyan-600',
-      bgGradient: 'from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20'
-    },
-    {
       title: 'View Analytics',
       description: 'Insights into your style patterns',
       icon: TrendingUp,

@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import apiClient from '@/lib/apiClient';
+import axios from 'axios';
 
 interface ImageMetadata {
   id: string;
@@ -30,10 +31,14 @@ const DisplayClothes: React.FC = () => {
   const fetchImages = async () => {
     setLoading(true);
     try {
+        const token = localStorage.getItem("token"); // or use the exact key you stored the token with
 
-  
-      const response = await apiClient('/images/?limit=50');
-      setImages(response?.data?.images || []);
+        const allItems = await axios.get("http://127.0.0.1:8000/api/images", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      setImages(allItems?.data?.images || []);
     } catch (error) {
       console.error('Error fetching images:', error);
     } finally {
