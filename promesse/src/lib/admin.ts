@@ -6,10 +6,10 @@ export const getAllUsers = async (): Promise<User[]> => {
   return apiClient('/admin/users');
 };
 
-export const updateUser = async (userId: string, updates: Partial<User>): Promise<User> => {
+export const updateUser = async (userId: string, role: string): Promise<User> => {
   return apiClient(`/admin/users/${userId}`, {
     method: 'PUT',
-    body: updates,
+    body: { role },  // send { role: "admin" }
   });
 };
 

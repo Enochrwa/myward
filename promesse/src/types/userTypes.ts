@@ -4,7 +4,7 @@ export interface User {
   email: string;
   full_name: string;
   gender: string;
-  is_admin: boolean;
+  role: string;
   created_at: string;
 }
 

@@ -208,11 +208,18 @@ def generate_smart_outfits(request: SmartOutfitRequest):
 
 
 @router.get("/user-clothes")
-def get_user_images():
+def get_user_images(user: dict = Depends(get_current_user)):
     connection = get_database_connection()
     cursor = connection.cursor(dictionary=True)
-    query = "SELECT * FROM images"
-    cursor.execute(query)
+    
+    # If the user is an admin, fetch all clothes. Otherwise, fetch only their own.
+    if user and user.get('role') == 'admin':
+        query = "SELECT * FROM images"
+        cursor.execute(query)
+    else:
+        query = "SELECT * FROM images WHERE user_id = %s"
+        cursor.execute(query, (user['id'],))
+        
     images = cursor.fetchall()
     for item in images:
         item['image_url'] = build_image_url(item['filename'])

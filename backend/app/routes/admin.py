@@ -20,7 +20,7 @@ async def read_users(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    if current_user.role not in [UserRole.admin, UserRole.superadmin]:
+    if current_user.role not in [UserRole.admin.value, UserRole.superadmin.value]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this resource")
     users = db.query(models.User).all()
     return users
@@ -32,7 +32,7 @@ async def update_user(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    if current_user.role not in [UserRole.admin, UserRole.superadmin]:
+    if current_user.role not in [UserRole.admin.value, UserRole.superadmin.value]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this resource")
 
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -53,7 +53,7 @@ async def delete_user(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    if current_user.role not in [UserRole.admin, UserRole.superadmin]:
+    if current_user.role not in [UserRole.admin.value, UserRole.superadmin.value]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this resource")
 
     db_user = db.query(models.User).filter(models.User.id == user_id).first()

@@ -23,23 +23,29 @@ const Header = () => {
   const location = useLocation();
   const { user, logout } = useAuth(); // Consumed AuthContext
 
-  const navigation = [
+  
+
+  const baseNavigation = [
     { name: 'Home', href: '/', icon: Sparkles },
-    { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-    { name: 'Wardrobe', href: '/wardrobe', icon: Heart },
-    // { name: 'AI Studio', href: '/ai-studio', icon: Brain },
-    // // { name: 'Community', href: '/community', icon: Calendar },
-    { name: 'Admin', href: '/admin', icon: Settings },
+      { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+      { name: 'Wardrobe', href: '/wardrobe', icon: Heart },
   ];
 
-  const wardrobeFeatures = [
-    { name: 'My Closet', href: '/wardrobe', description: 'Browse and organize your clothing items', icon: Heart },
- 
-    { name: 'Plan Week', href: '/wardrobe?action=plan-week', description: 'Weekly outfit planning calendar', icon: Calendar },
-    
-  ];
+  const adminNavigation = user && (user.role === 'admin' || user.role === 'superadmin')
+      ? [{ name: 'Admin', href: '/admin', icon: Settings }]
+      : [];
 
- 
+  const navigation = [...baseNavigation, ...adminNavigation];
+
+    const wardrobeFeatures = [
+      { name: 'My Closet', href: '/wardrobe', description: 'Browse and organize your clothing items', icon: Heart },
+  
+      { name: 'Plan Week', href: '/wardrobe?action=plan-week', description: 'Weekly outfit planning calendar', icon: Calendar },
+      
+    ];
+
+  
+  
 
   // Close mobile menu when route changes
   useEffect(() => {

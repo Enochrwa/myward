@@ -11,8 +11,10 @@ const AdminUserManagement = () => {
   if (loading) return <div>Loading users...</div>;
   if (error) return <div>Error fetching users: {error.message}</div>;
 
+  
   const handleToggleAdmin = (user: User) => {
-    updateUser(user.id.toString(), { is_admin: !user.is_admin });
+    const newRole = user.role === 'admin' ? 'user' : 'admin';
+    updateUser(user.id.toString(), { role: newRole });
   };
 
   const handleDeleteUser = (userId: number) => {
@@ -44,7 +46,7 @@ const AdminUserManagement = () => {
               <TableCell>{user.gender}</TableCell>
               <TableCell>
                 <Button onClick={() => handleToggleAdmin(user)}>
-                  {user.is_admin ? 'Revoke Admin' : 'Make Admin'}
+                  {user.role === "admin" ? 'Revoke Admin' : 'Make Admin'}
                 </Button>
               </TableCell>
               <TableCell>

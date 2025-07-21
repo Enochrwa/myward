@@ -9,8 +9,13 @@ class UserBase(BaseModel):
     is_active: bool = True
     is_admin: bool = False
 
-class UserUpdate(UserBase):
-    password: Optional[str] = None
+class UserUpdate(BaseModel):
+    username: Optional[str]
+    email: Optional[str]
+    full_name: Optional[str]
+    gender: Optional[str]
+    role: Optional[str]
+
 
 class UserCreate(BaseModel):
     username: str
