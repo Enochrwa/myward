@@ -29,7 +29,7 @@ const Header = () => {
     { name: 'Wardrobe', href: '/wardrobe', icon: Heart },
     // { name: 'AI Studio', href: '/ai-studio', icon: Brain },
     // // { name: 'Community', href: '/community', icon: Calendar },
-    // { name: 'Admin', href: '/admin', icon: Settings },
+    { name: 'Admin', href: '/admin', icon: Settings },
   ];
 
   const wardrobeFeatures = [

@@ -4,8 +4,9 @@ from typing import List
 
 from .. import tables as schemas
 from .. import model as models
-from ..security import get_current_user
+from ..security import get_current_user, superadmin_required
 from ..db.database import get_db
+from ..model import UserRole
 
 router = APIRouter(
     prefix="/admin",
@@ -19,7 +20,7 @@ async def read_users(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    if not current_user.is_admin:
+    if current_user.role not in [UserRole.admin, UserRole.superadmin]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this resource")
     users = db.query(models.User).all()
     return users
@@ -31,7 +32,7 @@ async def update_user(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    if not current_user.is_admin:
+    if current_user.role not in [UserRole.admin, UserRole.superadmin]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this resource")
 
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -52,7 +53,7 @@ async def delete_user(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    if not current_user.is_admin:
+    if current_user.role not in [UserRole.admin, UserRole.superadmin]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this resource")
 
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -62,3 +63,12 @@ async def delete_user(
     db.delete(db_user)
     db.commit()
     return
+
+@router.post("/superadmin/promote-admin/{user_id}")
+def promote_to_admin(user_id: int, current_user: dict = Depends(superadmin_required), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.role = "admin"
+    db.commit()
+    return {"message": f"{user.username} is now an admin"}

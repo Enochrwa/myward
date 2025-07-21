@@ -12,6 +12,7 @@ import SettingsPage from './pages/SettingsPage';
 import AdminPage from './pages/AdminPage';
 import NotFoundPage from './pages/NotFoundPage';
 import Header from './components/Header';
+import PrivateRoute from './components/auth/PrivateRoute';
 import UploadForm from './components/UploadForm';
 import RenderRecommendations from './components/Recommendations';
 import AIStudioPage from './pages/AIStudioPage';
@@ -49,13 +50,17 @@ function App() {
               <Route path="/outfit" element={<OutfitPage/>} />
               <Route path="/gallery" element={<OutfitRecommendations/>} />
               <Route path='/recommendations' element={<RenderRecommendations/>}/>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/wardrobe" element={<WardrobePage />} />
-              <Route path="/ai-studio/*" element={<AIStudioPage />} />
-              <Route path="/community" element={<CommunityPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/admin" element={<AdminPage />} />
+              <Route element={<PrivateRoute roles={['user', 'admin', 'superadmin']} />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/wardrobe" element={<WardrobePage />} />
+                <Route path="/ai-studio/*" element={<AIStudioPage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Route>
+              <Route element={<PrivateRoute roles={['admin', 'superadmin']} />}>
+                <Route path="/admin" element={<AdminPage />} />
+              </Route>
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </main>

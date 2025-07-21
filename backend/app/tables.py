@@ -17,28 +17,7 @@ class UserCreate(BaseModel):
     email: str
     password: str
     full_name: Optional[str] = Field(None, alias="fullName")
-    age: Optional[int] = None
     gender: Optional[str] = None
-    height: Optional[str] = None
-    weight: Optional[str] = None
-    bmi: Optional[str] = None
-    body_type: Optional[str] = Field(None, alias="bodyType")
-    skin_tone: Optional[str] = Field(None, alias="skinTone")
-    location: Optional[Dict[str, Any]] = None
-    timezone: Optional[str] = None
-    lifestyle: Optional[str] = None
-    budget_range: Optional[str] = Field(None, alias="budgetRange")
-    style_preferences: Optional[str] = Field(None, alias="stylePreferences")
-    color_preferences: Optional[str] = Field(None, alias="colorPreferences")
-    favorite_colors: Optional[str] = Field(None, alias="favoriteColors")
-    avoid_colors: Optional[str] = Field(None, alias="avoidColors")
-    allergies: Optional[str] = None
-    disabilities: Optional[str] = None
-    weather_preferences: Optional[List[str]] = Field(None, alias="weatherPreferences")
-    temperature_range: Optional[List[str]] = Field(None, alias="temperatureRange")
-    occasion_preferences: Optional[List[str]] = Field(None, alias="occasionPreferences")
-    profile_photo: Optional[str] = Field(None, alias="profilePhoto")
-    body_photos: Optional[List[str]] = Field(None, alias="bodyPhotos")
 
     class Config:
         from_attributes = True
@@ -49,31 +28,10 @@ class UserResponse(BaseModel):
     username: str
     email: str
     full_name: Optional[str] = Field(None, alias="fullName")
-    age: Optional[int] = None
     gender: Optional[str] = None
-    height: Optional[str] = None
-    weight: Optional[str] = None
-    bmi: Optional[str] = None
-    body_type: Optional[str] = Field(None, alias="bodyType")
-    skin_tone: Optional[str] = Field(None, alias="skinTone")
-    location: Optional[Dict[str, Any]] = None
-    timezone: Optional[str] = None
-    lifestyle: Optional[str] = None
-    budget_range: Optional[str] = Field(None, alias="budgetRange")
-    style_preferences: Optional[str] = Field(None, alias="stylePreferences")
-    color_preferences: Optional[str] = Field(None, alias="colorPreferences")
-    favorite_colors: Optional[str] = Field(None, alias="favoriteColors")
-    avoid_colors: Optional[str] = Field(None, alias="avoidColors")
-    allergies: Optional[str] = None
-    disabilities: Optional[str] = None
-    profile_photo: Optional[str] = Field(None, alias="profilePhoto")
-    body_photos: Optional[List[str]] = Field(None, alias="bodyPhotos")
-    weather_preferences: Optional[List[str]] = Field(None, alias="weatherPreferences")
-    temperature_range: Optional[List[str]] = Field(None, alias="temperatureRange")
-    occasion_preferences: Optional[List[str]] = Field(None, alias="occasionPreferences")
+    role: str
     created_at: datetime = Field(..., alias="createdAt")
     updated_at: datetime = Field(..., alias="updatedAt")
-    extraction_metadata: Optional[Dict[str, Any]] = Field(None, alias="extractionMetadata")
 
     class Config:
         from_attributes = True
@@ -238,12 +196,13 @@ class User(BaseModel):
     id: int
     username: str
     email: str
+    role: str
     # hashed_password: str # Should not be in response model
     created_at: datetime
     updated_at: datetime
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 

@@ -20,6 +20,13 @@ item_attribute_association = Table('item_attribute_association', Base.metadata,
     Column('attribute_id', Integer, ForeignKey('clothing_attributes.id'), primary_key=True)
 )
 
+import enum
+
+class UserRole(str, enum.Enum):
+    user = "user"
+    admin = "admin"
+    superadmin = "superadmin"
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -27,32 +34,10 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
-    age = Column(Integer, nullable=True)
     gender = Column(String(50), nullable=True)
-    height = Column(String(50), nullable=True)
-    weight = Column(String(50), nullable=True)
-    bmi = Column(String(50), nullable=True)
-    body_type = Column(String(50), nullable=True)
-    skin_tone = Column(String(50), nullable=True)
-    location = Column(JSON, nullable=True)
-    timezone = Column(String(50), default="UTC")
-    lifestyle = Column(String(100), nullable=True)
-    budget_range = Column(String(100), nullable=True)
-    style_preferences = Column(Text, nullable=True)
-    color_preferences = Column(String(100), nullable=True)
-    favorite_colors = Column(Text, nullable=True)
-    avoid_colors = Column(Text, nullable=True)
-    allergies = Column(Text, nullable=True)
-    disabilities = Column(Text, nullable=True)
-    profile_photo = Column(String(2048), nullable=True)
-    body_photos = Column(JSON, nullable=True)
-    is_admin = Column(Boolean, default=False)
-    weather_preferences = Column(JSON, nullable=True)
-    temperature_range = Column(JSON, nullable=True)
-    occasion_preferences = Column(JSON, nullable=True)
+    role = Column(String(20), default=UserRole.user.value)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    extraction_metadata = Column(JSON, nullable=True)
 
     # Relationships
     wardrobe_items = relationship("WardrobeItem", back_populates="user")

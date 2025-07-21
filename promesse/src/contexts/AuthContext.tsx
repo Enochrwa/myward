@@ -7,31 +7,10 @@ export interface User {
   username: string;
   email: string;
   fullName?: string;
-  age?: number;
   gender?: string;
-  height?: string;
-  weight?: string;
-  bmi?: string;
-  bodyType?: string;
-  skinTone?: string;
-  location?: any;
-  timezone?: string;
-  lifestyle?: string;
-  budgetRange?: string;
-  stylePreferences?: string;
-  colorPreferences?: string;
-  favoriteColors?: string;
-  avoidColors?: string;
-  allergies?: string;
-  disabilities?: string;
-  profilePhoto?: string;
-  bodyPhotos?: string[];
-  weatherPreferences?: string[];
-  temperatureRange?: string[];
-  occasionPreferences?: string[];
+  role: string;
   createdAt: string;
   updatedAt: string;
-  extractionMetadata?: any;
 }
 
 export interface AuthState {
@@ -75,11 +54,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      // No need to setToken here, as fetchUserData will trigger re-renders if successful
-      // and setToken is implicitly called via login/register or initial load.
-      // The main purpose here is to validate the token and fetch user data.
-      fetchUserData();
+    const storedUser = localStorage.getItem('user');
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
     }
   }, []);
 
@@ -90,12 +68,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // apiClient will automatically use the token from localStorage
       const userData: User = await apiClient('/users/me');
       setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
       setError(null); // Clear error on success
     } catch (err: any) {
       setError(err.message || 'Failed to fetch user data');
       setUser(null);
       setToken(null);
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
     } finally {
       setIsLoading(false);
     }

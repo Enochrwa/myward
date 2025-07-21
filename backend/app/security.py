@@ -60,6 +60,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     # This might require adding `from_orm = True` in your Pydantic schema's Config class.
     return schemas.User.model_validate(user) # Use model_validate for Pydantic v2
 
+def superadmin_required(user: schemas.User = Depends(get_current_user)):
+    if user.role != "superadmin":
+        raise HTTPException(status_code=403, detail="Superadmin access required")
+    return user
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
