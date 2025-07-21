@@ -188,23 +188,8 @@ class SmartOutfitRecommender:
     def load_wardrobe(self, clothing_items: List[Dict]):
         """Load wardrobe items from database records"""
         self.wardrobe = [ClothingItem.from_db_record(item) for item in clothing_items]
-        """Filter clothing items suitable for current weather"""
-        weather_adjust = self.weather_conditions.get(weather.weather_condition, {})
-        adjusted_temp = weather.temperature + weather_adjust.get('temp_adjust', 0)
-        
-        suitable_items = []
-        for item in items:
-            temp_range = item.temperature_range
-            if temp_range['min'] <= adjusted_temp <= temp_range['max']:
-                # Additional weather-specific filtering
-                if weather.weather_condition == 'Rain' and item.material in ['cotton', 'linen']:
-                    continue  # Skip absorbent materials in rain
-                if weather.weather_condition == 'Snow' and item.clothing_part == 'footwear':
-                    if 'sandal' in item.category.lower() or 'flip' in item.category.lower():
-                        continue  # Skip inappropriate footwear
-                suitable_items.append(item)
-        
-        return suitable_items
+
+
     
     def filter_by_occasion(self, items: List[ClothingItem], occasion: str) -> List[ClothingItem]:
         """Enhanced occasion filtering with hierarchical matching"""
@@ -316,6 +301,25 @@ class SmartOutfitRecommender:
         
         return 0.8  # Good compatibility but not perfect
     
+    def filter_by_weather(self, items: List[ClothingItem], weather: WeatherData) -> List[ClothingItem]:
+        """Filter wardrobe items suitable for current weather conditions."""
+        weather_adjust = self.weather_conditions.get(weather.weather_condition, {})
+        adjusted_temp = weather.temperature + weather_adjust.get('temp_adjust', 0)
+
+        suitable_items = []
+        for item in items:
+            temp_range = item.temperature_range
+            if temp_range['min'] <= adjusted_temp <= temp_range['max']:
+                # Additional weather-specific filtering
+                if weather.weather_condition == 'Rain' and item.material in ['cotton', 'linen']:
+                    continue  # Skip absorbent materials in rain
+                if weather.weather_condition == 'Snow' and item.clothing_part == 'footwear':
+                    if 'sandal' in item.category.lower() or 'flip' in item.category.lower():
+                        continue  # Skip inappropriate footwear
+                suitable_items.append(item)
+
+        return suitable_items
+
     def generate_outfit_combinations(self, weather: WeatherData, occasion: str, 
                                    max_combinations: int = 10) -> List[OutfitRecommendation]:
         """Enhanced outfit generation with diversity and season weighting"""

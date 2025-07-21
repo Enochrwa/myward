@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext'; // Added AuthProvider import
@@ -30,7 +30,27 @@ import OccasionWeatherRecommendations from './components/test/OccasionRecommenda
 
 function App() {
 
+  const [items, setItems] = useState<[]>([])
 
+  const API_BASE = 'http://localhost:8000/api';
+  
+    const fetchImages = async () => {
+      
+      try {
+        const response = await axios.get(`${API_BASE}/images/?limit=50`);
+      
+        setItems(response?.data?.images || []);
+        console.log("occasion: ", response?.data)
+      } catch (error) {
+        console.error('Error fetching images:', error);
+      } finally {
+        console.log("Fetching ready")
+      }
+    };
+  
+    useEffect(() => {
+      fetchImages();
+    }, []);
 
   return (
     <ThemeProvider>
@@ -43,9 +63,9 @@ function App() {
               <Route path="/" element={<IndexPage />}/>
               <Route path='/clothes' element={<DisplayClothes/>}  />
               <Route path="/outfit-builder/:imageId" element={<OutfitBuilderPage />} />
-              <Route path='/weather' element={<OccasionWeatherRecommendations/>} />
+              <Route path='/weather' element={<OccasionWeatherRecommendations wardrobeItems={items} />} />
               <Route path='/classifier' element={<ClotheClassifier/>} />
-              <Route path='/test' element={<WardrobeAndOutfits/>} />
+              <Route path='/saved-outfits' element={<WardrobeAndOutfits/>} />
               <Route path="/upload" element={<UploadForm />} />
               <Route path="/outfit" element={<OutfitPage/>} />
               <Route path="/gallery" element={<OutfitRecommendations/>} />

@@ -6,12 +6,16 @@ export const getAllUsers = async (): Promise<User[]> => {
   return apiClient('/admin/users');
 };
 
-export const updateUser = async (userId: string, role: string): Promise<User> => {
+export const updateUser = async (
+  userId: string,
+  updates: Partial<User>  // or: { role?: string }
+): Promise<User> => {
   return apiClient(`/admin/users/${userId}`, {
     method: 'PUT',
-    body: { role },  // send { role: "admin" }
+    body: updates,
   });
 };
+
 
 export const deleteUser = async (userId: string): Promise<void> => {
   return apiClient(`/admin/users/${userId}`, {

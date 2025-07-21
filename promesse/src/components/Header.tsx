@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, User, Settings, LogOut, Sparkles, Heart, Calendar, BarChart3, Wand2, Eye, Brain, LogIn } from 'lucide-react'; // Added LogIn
+import { Menu, X, User, Settings, LogOut, Sparkles, Heart, Calendar, BarChart3, Wand2, Eye, Brain, LogIn,CloudRain } from 'lucide-react'; // Added LogIn
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../hooks/useAuth'; // Added useAuth
@@ -15,6 +15,7 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
+import { Description } from '@radix-ui/react-dialog';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -28,7 +29,7 @@ const Header = () => {
   const baseNavigation = [
     { name: 'Home', href: '/', icon: Sparkles },
       { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-      { name: 'Wardrobe', href: '/wardrobe', icon: Heart },
+      { name: 'Wardrobe', href: '/wardrobe', icon: Heart }
   ];
 
   const adminNavigation = user && (user.role === 'admin' || user.role === 'superadmin')
@@ -41,7 +42,8 @@ const Header = () => {
       { name: 'My Closet', href: '/wardrobe', description: 'Browse and organize your clothing items', icon: Heart },
   
       { name: 'Plan Week', href: '/wardrobe?action=plan-week', description: 'Weekly outfit planning calendar', icon: Calendar },
-      
+       {name: "Outfits", href: "/saved-outfits", description: "See All Your Saved Outfits",icon: Brain},
+      {name: "Occasion & Weather", href: "/weather", description: "Get recommendations according to your occasions ad weather", icon: CloudRain}
     ];
 
   
