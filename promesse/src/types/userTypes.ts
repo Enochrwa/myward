@@ -1,10 +1,20 @@
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+  gender: string;
+  is_admin: boolean;
+  created_at: string;
+}
+
 export interface UserProfile {
-  user_id: number; // Assuming user_id is returned by the backend for the UserProfile schema
+  user_id: number;
   preferred_styles?: string[];
   preferred_colors?: string[];
   avoided_colors?: string[];
-  sizes?: Record<string, string>; // e.g., { shirt: "M", pants_waist: "32" }
-  updated_at?: string; // ISO date string
+  sizes?: Record<string, string>;
+  updated_at?: string;
 }
 
 export interface UserProfileUpdate {
@@ -12,25 +22,4 @@ export interface UserProfileUpdate {
   preferred_colors?: string[];
   avoided_colors?: string[];
   sizes?: Record<string, string>;
-}
-
-// You might also want a User type if not defined elsewhere
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  // Add other user fields if necessary, e.g., from your auth context
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  role: 'admin' | 'premium' | 'basic';
-  status: 'active' | 'suspended' | 'pending';
-  joinDate: string;
-  lastActive: string;
-  totalOutfits: number;
-  subscription: string;
 }
