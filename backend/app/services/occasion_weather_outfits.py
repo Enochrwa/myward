@@ -1,10 +1,11 @@
 import numpy as np
 import json
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from dataclasses import dataclass
 from sklearn.metrics.pairwise import cosine_similarity
 import requests
+from pydantic import BaseModel
 import os
 from dotenv import  load_dotenv
 
@@ -111,6 +112,12 @@ class OutfitRecommendation:
             self.style_coherence * 0.15 +
             self.color_harmony * 0.10
         )
+# Put this after your existing SmartOutfitRequest
+class WeatherOccasionRequest(BaseModel):
+    city: str
+    country_code: Optional[str] = None
+    occasion: str
+    wardrobe_items: List[Dict[str, Any]]
 
 class SmartOutfitRecommender:
     """Main outfit recommendation engine"""

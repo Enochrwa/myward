@@ -27,35 +27,19 @@ const Header = () => {
     { name: 'Home', href: '/', icon: Sparkles },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'Wardrobe', href: '/wardrobe', icon: Heart },
-    { name: 'AI Studio', href: '/ai-studio', icon: Brain },
+    // { name: 'AI Studio', href: '/ai-studio', icon: Brain },
     // // { name: 'Community', href: '/community', icon: Calendar },
     // { name: 'Admin', href: '/admin', icon: Settings },
   ];
 
   const wardrobeFeatures = [
     { name: 'My Closet', href: '/wardrobe', description: 'Browse and organize your clothing items', icon: Heart },
-    { name: 'Create Outfit', href: '/wardrobe?action=create-outfit', description: 'AI-powered outfit generation', icon: Sparkles },
+ 
     { name: 'Plan Week', href: '/wardrobe?action=plan-week', description: 'Weekly outfit planning calendar', icon: Calendar },
-    { name: 'Analytics', href: '/wardrobe?action=analytics', description: 'Wardrobe insights and statistics', icon: BarChart3 },
-    { name: 'Style Guide', href: '/wardrobe?action=style-guide', description: 'Personalized styling recommendations', icon: Wand2 },
-    { name: 'Favorites', href: '/wardrobe?filter=favorites', description: 'Your most loved pieces', icon: Heart },
+    
   ];
 
-  const aiStudioFeatures = [
-    { name: 'Intelligent Matching', href: '/ai-studio/intelligent-matching', description: 'AI-powered clothing combinations', icon: Sparkles },
-    { name: 'Advanced Search', href: '/ai-studio/advanced-search', description: 'Smart search with intelligent filters', icon: Eye },
-    { name: 'Occasion Recommendations', href: '/ai-studio/occasion-recommendations', description: 'Weather-aware outfit suggestions', icon: Calendar },
-    { name: 'Style Insights', href: '/ai-studio/insights', description: 'AI-powered style intelligence', icon: Brain },
-    { name: 'Trend Forecasting', href: '/ai-studio/trends', description: 'Discover upcoming fashion trends', icon: Wand2 },
-    { name: 'Outfit Analyzer', href: '/ai-studio/analyzer', description: 'AI analysis of your outfit photos', icon: BarChart3 },
-  ];
-
-  const communityFeatures = [
-    { name: 'Style Feed', href: '/community', description: 'Discover trending outfits and styles', icon: Heart },
-    { name: 'Fashion Challenges', href: '/community?tab=challenges', description: 'Join styling competitions', icon: Sparkles },
-    { name: 'Style Communities', href: '/community?tab=groups', description: 'Connect with fashion enthusiasts', icon: Calendar },
-    { name: 'Lookbook', href: '/community?tab=lookbook', description: 'Share your outfit inspirations', icon: Eye },
-  ];
+ 
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -135,102 +119,6 @@ const Header = () => {
                                     </div>
                                     <div className="text-xs text-gray-500 dark:text-gray-400">
                                       {feature.description}
-                                    </div>
-                                  </Link>
-                                </NavigationMenuLink>
-                              ))}
-                            </div>
-                          </div>
-                        </NavigationMenuContent>
-                      </NavigationMenuItem>
-                    );
-                  }
-
-                  if (item.name === 'AI Studio') {
-                    return (
-                      <NavigationMenuItem key={item.name}>
-                        <NavigationMenuTrigger className={cn(
-                          "bg-transparent hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 transition-all duration-300",
-                          isActive && "bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-700 dark:text-indigo-300"
-                        )}>
-                          <Icon size={16} className="mr-2" />
-                          {item.name}
-                        </NavigationMenuTrigger>
-                        <NavigationMenuContent>
-                          <div className="w-[400px] p-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border border-white/50 dark:border-gray-700/50">
-                            <div className="mb-4">
-                              <h4 className="text-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                AI Fashion Studio
-                              </h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Advanced AI-powered styling tools
-                              </p>
-                            </div>
-                            <div className="space-y-2">
-                              {aiStudioFeatures.map((feature) => (
-                                <NavigationMenuLink key={feature.name} asChild>
-                                  <Link
-                                    to={feature.href}
-                                    className="block p-3 rounded-lg hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 transition-all duration-200 group"
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <feature.icon size={16} className="text-indigo-600 dark:text-indigo-400" />
-                                      <div>
-                                        <div className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
-                                          {feature.name}
-                                        </div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                          {feature.description}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </Link>
-                                </NavigationMenuLink>
-                              ))}
-                            </div>
-                          </div>
-                        </NavigationMenuContent>
-                      </NavigationMenuItem>
-                    );
-                  }
-
-                  if (item.name === 'Community') {
-                    return (
-                      <NavigationMenuItem key={item.name}>
-                        <NavigationMenuTrigger className={cn(
-                          "bg-transparent hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900/20 dark:hover:to-cyan-900/20 transition-all duration-300",
-                          isActive && "bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 text-blue-700 dark:text-blue-300"
-                        )}>
-                          <Icon size={16} className="mr-2" />
-                          {item.name}
-                        </NavigationMenuTrigger>
-                        <NavigationMenuContent>
-                          <div className="w-[350px] p-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border border-white/50 dark:border-gray-700/50">
-                            <div className="mb-4">
-                              <h4 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                                Fashion Community
-                              </h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Connect and get inspired
-                              </p>
-                            </div>
-                            <div className="space-y-2">
-                              {communityFeatures.map((feature) => (
-                                <NavigationMenuLink key={feature.name} asChild>
-                                  <Link
-                                    to={feature.href}
-                                    className="block p-3 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900/20 dark:hover:to-cyan-900/20 transition-all duration-200 group"
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <feature.icon size={16} className="text-blue-600 dark:text-blue-400" />
-                                      <div>
-                                        <div className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-300">
-                                          {feature.name}
-                                        </div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                          {feature.description}
-                                        </div>
-                                      </div>
                                     </div>
                                   </Link>
                                 </NavigationMenuLink>

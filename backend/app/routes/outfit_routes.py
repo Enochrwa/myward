@@ -11,6 +11,8 @@ from ..db.database import get_database_connection
 from ..utils.constants import CATEGORY_PART_MAPPING, CLOTHING_PARTS, OUTFIT_RULES
 from ..utils.cluster import main as run_clustering
 from ..services.outfit_creation_service import SmartOutfitCreator
+from ..services.occasion_weather_outfits import WeatherService, WeatherOccasionRequest, SmartOutfitRecommender  # Assuming you have this or define it similarly to your example
+import os
 
 router = APIRouter(prefix="/outfit")
 
@@ -311,3 +313,44 @@ def generate_smart_outfits(request: SmartOutfitRequest):
         top_n=10
     )
     return recommendations
+
+
+
+@router.post("/recommend/weather-occasion")
+def recommend_weather_occasion(request: WeatherOccasionRequest):
+    api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Weather API key not configured.")
+    
+    weather_service = WeatherService(api_key)
+    weather = weather_service.get_current_weather(request.city, request.country_code)
+
+    recommender = SmartOutfitRecommender(weather_service)
+    recommender.load_wardrobe(request.wardrobe_items)
+    recommendations = recommender.generate_outfit_combinations(
+        weather=weather,
+        occasion=request.occasion,
+        max_combinations=5
+    )
+
+    # Format response to match your frontend expectations
+    result = []
+    for outfit in recommendations:
+        result.append({
+            "items": [
+                {
+                    "id": item.id,
+                    "image_url": f"http://127.0.0.1:8000/uploads/{item.filename}",
+                    "category": item.category,
+                    "style": item.style,
+                    "occasion": item.occasion,
+                    "season": item.season,
+                    "color": item.dominant_color
+                }
+                for item in outfit.items
+            ],
+            "score": outfit.overall_score()
+        })
+
+    return result
+
