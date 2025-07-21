@@ -333,7 +333,8 @@ def recommend_weather_occasion(request: WeatherOccasionRequest):
     recommendations = recommender.generate_outfit_combinations(
         weather=weather,
         occasion=request.occasion,
-        max_combinations=5
+        max_combinations=5,
+        creativity=getattr(request, 'creativity', 0.5)
     )
 
     # Format response to match your frontend expectations
@@ -362,6 +363,7 @@ class WeeklyPlanRequest(BaseModel):
     location: str
     weekly_plan: Dict[str, Dict[str, str]]
     wardrobe_items: List[Dict[str, Any]]
+    creativity: float = 0.5
 
 
 @router.post("/weekly-plan")
@@ -376,7 +378,8 @@ def plan_weekly_outfits_route(request: WeeklyPlanRequest):
 
     weekly_outfits = recommender.plan_weekly_outfits(
         weekly_plan=request.weekly_plan,
-        location=request.location
+        location=request.location,
+        creativity=request.creativity
     )
 
     # Format response
