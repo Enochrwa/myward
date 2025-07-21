@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const API_BASE = 'http://127.0.0.1:8000/api';
+
 import apiClient from '@/lib/apiClient';
 
 interface WardrobeAnalytics {
@@ -42,7 +42,7 @@ export const useWardrobeAnalytics = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = apiClient(`/analytics`);
+        const response = await apiClient(`/analytics`);
       
         setAnalytics(response?.data);
       } catch (err) {
@@ -52,12 +52,8 @@ export const useWardrobeAnalytics = () => {
 
     const fetchItems = async () => {
       try {
-        const response = await fetch(`${API_BASE}/images?limit=1000`); // Fetch a large number of items
-        if (!response.ok) {
-          throw new Error('Failed to fetch wardrobe items');
-        }
-        const data = await response.json();
-        setItems(data.images || []);
+        const response = await apiClient('/images?limit=1000'); // Fetch a large number of items
+        setItems(response?.data.images || []);
       } catch (err) {
         setError(err.message);
       }
