@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Image } from 'lucide-react';
+import { Loader2, Image, Trash2, X } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
 import axios from 'axios';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+
+
 interface ImageMetadata {
   id: string;
   filename: string;
@@ -13,12 +17,15 @@ interface ImageMetadata {
   color_palette: string[];
   upload_date: string;
   batch_id?: string;
+  category?: string;
 }
 
 const ClotheAnalytics: React.FC = () => {
   const [images, setImages] = useState<ImageMetadata[]>([]);
   const [selectedImage, setSelectedImage] = useState<ImageMetadata | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState<ImageMetadata | null>(null);
 
 
   const fetchImages = async () => {
@@ -39,6 +46,20 @@ const ClotheAnalytics: React.FC = () => {
       console.error('Error fetching images:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (imageId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://127.0.0.1:8000/api/images/${imageId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setImages(images.filter((image) => image.id !== imageId));
+    } catch (error) {
+      console.error('Error deleting image:', error);
     }
   };
 
@@ -79,13 +100,12 @@ const ClotheAnalytics: React.FC = () => {
             {images?.map((image) => (
               <div
                 key={image.id}
-                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-xl overflow-hidden hover:shadow-2xl hover:scale-[1.02] hover:border-blue-500/50 transition-all duration-300 cursor-pointer group"
-                onClick={() => setSelectedImage(image)}
+                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-xl overflow-hidden hover:shadow-2xl hover:scale-[1.02] hover:border-blue-500/50 transition-all duration-300 group"
               >
-                <div className="relative aspect-square bg-gradient-to-br from-gray-800 to-gray-700">
+                <div className="relative aspect-square bg-gradient-to-br from-gray-800 to-gray-700" onClick={() => setSelectedImage(image)}>
                   <img
                     src={`http://127.0.0.1:8000/uploads/${image?.filename}`}
-                    alt={image?.category}
+                    alt={image?.category || 'clothing item'}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
                       e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM3NDE1MSIvPgogIDx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjOWNhM2FmIj5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPgo=';
@@ -104,13 +124,22 @@ const ClotheAnalytics: React.FC = () => {
                   
                   {/* Analytics badge */}
                   <div className="absolute top-3 right-3">
-                    <div className="bg-blue-500/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
-                      AI Analyzed
-                    </div>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-red-500/80"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setImageToDelete(image);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
                 
-                <div className="p-4 bg-gray-800/80 backdrop-blur-sm">
+                <div className="p-4 bg-gray-800/80 backdrop-blur-sm" onClick={() => setSelectedImage(image)}>
                   <h3 className="font-semibold text-white mb-2 truncate text-sm">
                     <span className='font-bold'>AI predicted: </span><span className='font-bold italic'>{image?.category}</span>
                   </h3>
@@ -171,8 +200,8 @@ const ClotheAnalytics: React.FC = () => {
 
         {/* Image Detail Modal */}
         {selectedImage && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-2xl max-w-5xl max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
+            <div className="bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-2xl max-w-5xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="p-8">
                 <div className="flex justify-between items-start mb-6">
                   <div>
@@ -187,7 +216,7 @@ const ClotheAnalytics: React.FC = () => {
                     onClick={() => setSelectedImage(null)}
                     className="text-gray-400 hover:text-white text-3xl font-light leading-none hover:bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center transition-all"
                   >
-                    ×
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
 
@@ -308,6 +337,28 @@ const ClotheAnalytics: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Are you sure you want to delete this item?</DialogTitle>
+              <DialogDescription>
+                This action cannot be undone. This will permanently delete the item
+                and remove it from your wardrobe.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={() => {
+                if (imageToDelete) {
+                  handleDelete(imageToDelete.id);
+                }
+                setIsDeleteDialogOpen(false);
+              }}>Delete</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
