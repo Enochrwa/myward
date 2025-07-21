@@ -1,6 +1,7 @@
 import SmartOutfitRecommendations from "@/components/test/SmartOutfitRecommendations";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import apiClient from "@/lib/apiClient";
 
 export default function WardrobeTestPage() {
         const [ wardrobeItems, setWardrobeItems] = useState<[]>([])
@@ -9,7 +10,7 @@ export default function WardrobeTestPage() {
             (
                 async () =>{
                     try {
-                        const response = await axios.get("http://127.0.0.1:8000/api/outfit/user-items")
+                        const response = apiClient("/outfit/user-items")
                         if(response?.data){
                             setWardrobeItems(response?.data)
                         }

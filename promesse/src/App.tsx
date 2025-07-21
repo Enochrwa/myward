@@ -27,46 +27,71 @@ import WardrobeAndOutfits from './components/WardrobeAndOutfits';
 import DisplayClothes from "./components/DisplayClothes"
 import WeatherOccasionRecommender from './components/WeatherOccasionRecommender';
 import WeeklyPlanner from './components/WeeklyPlanner';
+import apiClient from './lib/apiClient';
+import LoginPage from './pages/LoginPage';
 
 function App() {
 
-  const [items, setItems] = useState<[]>([])
+  const [items, setItems] = useState<[]>([]);
+  // const [isAuthModalOpen, setIsAuthModalOpen] = useState(true);
+  const [ isOpen, setOpen] = useState(false);
 
-  const API_BASE = 'http://localhost:8000/api';
-  
-    const fetchImages = async () => {
-      
-      try {
-        const response = await axios.get(`${API_BASE}/images/?limit=50`);
-      
-        setItems(response?.data?.images || []);
-        console.log("occasion: ", response?.data)
-      } catch (error) {
-        console.error('Error fetching images:', error);
-      } finally {
-        console.log("Fetching ready")
-      }
-    };
-  
+  const onClose = () =>{
+    setOpen(false)
+  }
+
+
+    // API returns direct array of items
+
+
+
     useEffect(() => {
-      fetchImages();
+      (async () => {
+        try {
+          const token = localStorage.getItem("token"); // or use the exact key you stored the token with
+
+          const allItems = await axios.get("http://127.0.0.1:8000/api/outfit/user", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          console.log("All Items: ", allItems.data);
+        } catch (error) {
+          console.error("Error fetching images", error);
+        }
+      })();
     }, []);
 
-    // useEffect(() =>{
-    //   (
-    //     async () =>{
-    //       try{
 
-    //         const response = await axios.get(`http://127.0.0.1:8000/api/other/weather/${"Kigali"}`);
-            
-    //         console.log("Weather", response?.data)
-    //     } catch (error) {
-            
-    //         console.error("Error fetching weather data:", error);
-    //     }
-    //     }
-    //   )()
-    // },[])
+    const getAuthToken = () => localStorage.getItem("token");
+    const token = getAuthToken();
+
+
+    console.log("Token:", token); // inside apiClient
+
+
+
+  
+    // const fetchImages = async () => {
+      
+    //   try {
+    //     const response = await apiClient('/images/?limit=50');
+      
+    //     setItems(response?.data?.images || []);
+    //     console.log("occasion: ", response?.data)
+    //   } catch (error) {
+    //     console.error('Error fetching images:', error);
+    //   } finally {
+    //     console.log("Fetching ready")
+    //   }
+    // };
+  
+    // useEffect(() => {
+    //   fetchImages();
+    // }, []);
+
+ 
 
   return (
     <ThemeProvider>
@@ -78,8 +103,9 @@ function App() {
             <Routes>
               <Route path="/" element={<IndexPage />}/>
               <Route path='/clothes' element={<DisplayClothes/>}  />
+              <Route path='/login' element={<LoginPage isOpen={ isOpen} onClose={onClose}/>} />
               <Route path="/outfit-builder/:imageId" element={<OutfitBuilderPage />} />
-              <Route path='/weather' element={<WeatherOccasionRecommender wardrobeItems={items} />} />
+              {/* <Route path='/weather' element={<WeatherOccasionRecommender wardrobeItems={items || []} />} /> */}
               <Route path='/classifier' element={<ClotheClassifier/>} />
               <Route path='/weekly' element={<WeeklyPlanner/>} />
               <Route path='/saved-outfits' element={<WardrobeAndOutfits/>} />

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Calendar, Loader2 } from 'lucide-react';
+import apiClient from '@/lib/apiClient';
 
 const occasionOptions = [
   "work", "leisure", "formal", "outdoor", "party", "sport", "smart_casual"
@@ -33,11 +34,8 @@ const WeeklyPlanner = () => {
 
   const fetchWardrobeItems = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/outfit/user-clothes');
-      if(response.ok) {
-        const data = await response.json();
-        setWardrobeItems(data);
-      }
+      const response = await apiClient('/outfit/user-clothes');
+      setWardrobeItems(response?.data);
     } catch (error) {
       console.error('Error fetching wardrobe items:', error);
     }

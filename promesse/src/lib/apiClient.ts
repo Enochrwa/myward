@@ -4,7 +4,7 @@ import { PersonalizedWardrobeSuggestions } from '@/types/recommendationTypes';
 import { Feedback, FeedbackCreate } from '@/types/outfitTypes';
 
 // Base URL from environment or fallback
-const BASE_URL = 'http://localhost:8000/api';
+const BASE_URL = 'http://127.0.0.1:8000/api';
 
 // Helper: get auth token from localStorage
 const getAuthToken = () => localStorage.getItem('token');

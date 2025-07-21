@@ -1,4 +1,6 @@
 import { useState } from "react";
+import apiClient from "@/lib/apiClient";
+
 
 export default function ClotheClassifier() {
   const [files, setFiles] = useState([]);
@@ -15,12 +17,12 @@ export default function ClotheClassifier() {
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
 
-    const res = await fetch("http://localhost:8000/api/ml/predict-multiple/", {
+    const res = await apiClient("/ml/predict-multiple/", {
       method: "POST",
       body: formData,
     });
-    const data = await res.json();
-    setResults(data.predictions);
+    
+    setResults(res?.data.predictions);
   };
 
   return (

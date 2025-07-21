@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
+import apiClient from '@/lib/apiClient';
 
 interface ImageMetadata {
   id: string;
@@ -21,15 +23,17 @@ const DisplayClothes: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const ROW_SIZE = 5;
   const DISPLAY_DURATION = 3000;
+  const {  user} = useAuth()
 
   const API_BASE = 'http://localhost:8000/api';
 
   const fetchImages = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/images/?limit=50`);
-      const data = await response.json();
-      setImages(data.images || []);
+
+  
+      const response = await apiClient('/images/?limit=50');
+      setImages(response?.data?.images || []);
     } catch (error) {
       console.error('Error fetching images:', error);
     } finally {

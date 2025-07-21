@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, Image } from 'lucide-react';
+import apiClient from '@/lib/apiClient';
 
 interface ImageMetadata {
   id: string;
@@ -19,14 +20,12 @@ const ClotheAnalytics: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<ImageMetadata | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const API_BASE = 'http://localhost:8000/api';
 
   const fetchImages = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/images/?limit=100`);
-      const data = await response.json();
-      setImages(data.images || []);
+      const response = await apiClient('/images/?limit=100');
+      setImages(response?.data?.images || []);
     } catch (error) {
       console.error('Error fetching images:', error);
     } finally {

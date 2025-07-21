@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Eye, Trash2, BarChart3, Image as ImageIcon, Palette, Activity, Loader2 } from 'lucide-react';
-
+import apiClient from '@/lib/apiClient';
 interface ImageMetadata {
   id: string;
   filename: string;
@@ -82,16 +82,15 @@ const ImageGallery: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
 
-  const API_BASE = 'http://localhost:8000/api';
 
   const fetchImages = async (batchId?: string) => {
     setLoading(true);
     try {
       const url = batchId 
-        ? `${API_BASE}/images/?batch_id=${batchId}&limit=100`
-        : `${API_BASE}/images/?limit=100`;
-      const response = await fetch(url);
-      const data = await response.json();
+        ? '/images/?batch_id=${batchId}&limit=100'
+        : `/images/?limit=100`;
+      const response = await apiClient(url)
+      const data = await response?.data
       setImages(data.images || []);
     } catch (error) {
       console.error('Error fetching images:', error);

@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import apiClient from "@/lib/apiClient";
 
 
 
 const recommendOutfitsByWeatherOccasion = async (city, occasion, wardrobeItems) => {
-    const response = await axios.post("http://127.0.0.1:8000/api/outfit/recommend/weather-occasion", {
+    const data = {
         city,
         occasion,
         wardrobe_items: wardrobeItems
+    }
+    const response = await apiClient("/outfit/recommend/weather-occasion", {
+        method:"POST",
+        body:data
     });
     return response.data;
 };

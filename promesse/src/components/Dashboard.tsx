@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import apiClient from '@/lib/apiClient';
 import { 
   Shirt, 
   Calendar, 
@@ -163,22 +164,17 @@ const Dashboard = () => {
     formData.append('metadatas', JSON.stringify(metadata));
 
     try {
-      const response = await fetch(`http://localhost:8000/api/upload-images/`, {
+      const data = await apiClient('/upload-images/', {
         method: 'POST',
-        body: formData,
+        body: formData,  // FormData is passed as-is, no need for JSON.stringify
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setBatchProgress({
-          total: data.total_images,
-          completed: data.successful_uploads,
-          failed: data.failed_uploads
-        });
-        navigate("/wardrobe");
-      } else {
-        console.error('Batch upload failed:', response.statusText);
-      }
+      setBatchProgress({
+        total: data.total_images,
+        completed: data.successful_uploads,
+        failed: data.failed_uploads,
+      });
+      navigate("/wardrobe");
     } catch (error) {
       console.error('Error uploading images:', error);
     } finally {

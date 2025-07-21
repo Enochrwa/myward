@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from ..security import get_current_user
+from ..model import User
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Dict, Any
 import json
@@ -37,14 +38,14 @@ def clean_item(item: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @router.get("/recommend/{image_id}")
-def recommend_outfit(image_id: str):
+def recommend_outfit(image_id: str, current_user: User = Depends(get_current_user)):
     connection = get_database_connection()
     cursor = connection.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM images WHERE id = %s", (image_id,))
+    cursor.execute("SELECT * FROM images WHERE id = %s AND user_id = %s", (image_id, current_user.id))
     base_item = cursor.fetchone()
     if not base_item:
-        raise HTTPException(status_code=404, detail="Image not found.")
+        raise HTTPException(status_code=404, detail="Image not found or you do not own it.")
 
     query_vector = np.array(json.loads(base_item['resnet_features']), dtype=np.float32)
     base_item = clean_item(base_item)
@@ -102,8 +103,8 @@ def recommend_outfit(image_id: str):
 
 
 @router.post("/custom")
-def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
-    user_id = user['id']
+def save_custom_outfit(outfit: dict, user: User = Depends(get_current_user)):
+    user_id = user.id
     outfit_id = str(uuid.uuid4())
     
     connection = get_database_connection()
@@ -112,7 +113,7 @@ def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
     # Stitch preview image
     images_to_stitch = []
     for item_id in outfit.get("clothing_items", []):
-        cursor.execute("SELECT filename FROM images WHERE id = %s", (item_id,))
+        cursor.execute("SELECT filename FROM images WHERE id = %s user_id = %s", (item_id,user_id))
         row = cursor.fetchone()
         if row:
             images_to_stitch.append(f"uploads/{row['filename']}")
@@ -155,13 +156,13 @@ def save_custom_outfit(outfit: dict, user: dict = Depends(get_current_user)):
     return {"message": "Outfit saved successfully", "outfit_id": outfit_id, "preview_image_url": build_image_url(preview_image_filename)}
 
 
-@router.get("/user/{user_id}")
-def get_user_outfits(user_id: str):
+@router.get("/user")
+def get_user_outfits(current_user: User = Depends(get_current_user)):
     connection = get_database_connection()
     cursor = connection.cursor(dictionary=True)
 
     query = "SELECT * FROM outfits WHERE user_id = %s"
-    cursor.execute(query, (user_id,))
+    cursor.execute(query, (current_user.id,))
     outfits = cursor.fetchall()
 
     for outfit in outfits:
@@ -171,7 +172,9 @@ def get_user_outfits(user_id: str):
 
 
 @router.post("/cluster")
-def cluster_images():
+def cluster_images(current_user: User = Depends(get_current_user)):
+    if not current_user.role == "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
     try:
         run_clustering()
         return {"message": "Clustering process started successfully."}
@@ -180,13 +183,14 @@ def cluster_images():
 
 
 @router.delete("/{outfit_id}")
-def delete_outfit(outfit_id: str):
+def delete_outfit(outfit_id: str, current_user: User = Depends(get_current_user)):
     connection = get_database_connection()
     cursor = connection.cursor()
-    query = "DELETE FROM outfits WHERE id = %s"
-    cursor.execute(query, (outfit_id,))
+    query = "DELETE FROM outfits WHERE id = %s AND user_id = %s"
+    cursor.execute(query, (outfit_id, current_user.id))
     connection.commit()
-
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Outfit not found or you do not own it")
     return {"message": "Outfit deleted successfully", "outfit_id": outfit_id}
 
 
@@ -195,15 +199,6 @@ class SmartOutfitRequest(BaseModel):
     preferences: Dict[str, Any]
 
 
-@router.post("/generate-smart-outfits")
-def generate_smart_outfits(request: SmartOutfitRequest):
-    creator = SmartOutfitCreator()
-    recommendations = creator.create_smart_outfits(
-        wardrobe_items=request.wardrobe_items,
-        preferences=request.preferences,
-        top_n=10
-    )
-    return recommendations
 
 
 @router.get("/user-clothes")
@@ -228,7 +223,7 @@ def get_user_images(user = Depends(get_current_user)):
     connection = get_database_connection()
     cursor = connection.cursor(dictionary=True)
     query = "SELECT * FROM images WHERE user_id = %s"
-    cursor.execute(query)
+    cursor.execute(query, (user.id,))
     
     images = cursor.fetchall()
     for item in images:
@@ -260,15 +255,6 @@ def toggle_favorite_outfit(outfit_id: str, user: dict = Depends(get_current_user
     return {"message": "Favorite status updated successfully", "outfit_id": outfit_id, "is_favorite": new_status}
 
 
-@router.delete("/{outfit_id}")
-def delete_outfit(outfit_id: str):
-    connection = get_database_connection()
-    cursor = connection.cursor()
-    query = "DELETE FROM outfits WHERE id = %s"
-    cursor.execute(query, (outfit_id,))
-    connection.commit()
-
-    return {"message": "Outfit deleted successfully", "outfit_id": outfit_id}
 
 
 @router.put("/{outfit_id}")

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const API_BASE = 'http://127.0.0.1:8000/api';
+import apiClient from '@/lib/apiClient';
 
 interface WardrobeAnalytics {
   total_images: number;
@@ -41,12 +42,9 @@ export const useWardrobeAnalytics = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await fetch(`${API_BASE}/analytics`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch analytics data');
-        }
-        const data = await response.json();
-        setAnalytics(data);
+        const response = apiClient(`/analytics`);
+      
+        setAnalytics(response?.data);
       } catch (err) {
         setError(err.message);
       }

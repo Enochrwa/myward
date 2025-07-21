@@ -26,7 +26,7 @@ from ..utils.image_processing import process_single_image
 
 
 
-from ..services.occasion_weather_outfits import WeatherService, SmartOutfitRecommender
+from ..services.occasion_weather_outfits import WeatherService, SmartOutfitRecommender, WeatherOccasionRequest
 
 
 UPLOAD_DIR = "uploads"
@@ -161,21 +161,21 @@ async def upload_single_image(
 
 
 @router.get("/recommend/similar/{image_id}")
-def recommend_similar(image_id: str, top_k: int = 5):
+def recommend_similar(image_id: str, top_k: int = 5, current_user: User = Depends(get_current_user)):
     connection = get_database_connection()
     cursor = connection.cursor(dictionary=True)
 
     # 1️⃣ Fetch the query image feature and category
-    cursor.execute("SELECT category, resnet_features FROM images WHERE id = %s", (image_id,))
+    cursor.execute("SELECT category, resnet_features FROM images WHERE id = %s AND user_id = %s", (image_id, current_user.id))
     row = cursor.fetchone()
     if not row:
-        raise HTTPException(status_code=404, detail="Image not found.")
+        raise HTTPException(status_code=404, detail="Image not found or you do not own it.")
 
     category = row['category']
     query_vec = np.array(json.loads(row['resnet_features']), dtype=np.float32)
 
     # 2️⃣ Fetch all metadata and features for this category
-    cursor.execute("SELECT * FROM images WHERE category = %s", (category,))
+    cursor.execute("SELECT * FROM images WHERE category = %s AND user_id = %s", (category, current_user.id))
     metadata_rows = cursor.fetchall()
 
     exclude_keys = {"resnet_features", "opencv_features"}
@@ -411,7 +411,8 @@ async def upload_multiple_images(
 @router.get("/batches")
 async def get_batches(
     limit: Optional[int] = Query(10, description="Number of batches to return"),
-    offset: Optional[int] = Query(0, description="Offset for pagination")
+    offset: Optional[int] = Query(0, description="Offset for pagination"),
+    current_user: User = Depends(get_current_user)
 ):
     """Get list of batch uploads"""
     try:
@@ -419,12 +420,15 @@ async def get_batches(
         cursor = connection.cursor(dictionary=True)
         
         query = """
-        SELECT * FROM batch_uploads
-        ORDER BY created_at DESC
+        SELECT b.* FROM batch_uploads b
+        JOIN images i ON b.batch_id = i.batch_id
+        WHERE i.user_id = %s
+        GROUP BY b.batch_id
+        ORDER BY b.created_at DESC
         LIMIT %s OFFSET %s
         """
         
-        cursor.execute(query, (limit, offset))
+        cursor.execute(query, (current_user.id, limit, offset))
         batches = cursor.fetchall()
         
         return {
@@ -471,30 +475,35 @@ async def update_category(data: UpdateCategoryRequest,current_user: User = Depen
             connection.close()
 
 @router.get("/batches/{batch_id}")
-async def get_batch_images(batch_id: str):
+async def get_batch_images(batch_id: str, current_user: User = Depends(get_current_user)):
     """Get all images from a specific batch"""
     try:
         connection = get_database_connection()
         cursor = connection.cursor(dictionary=True)
-        
-        # Get batch info
-        batch_query = "SELECT * FROM batch_uploads WHERE batch_id = %s"
-        cursor.execute(batch_query, (batch_id,))
+
+        # Get batch info and check ownership
+        batch_query = """
+            SELECT b.* FROM batch_uploads b
+            JOIN (SELECT DISTINCT batch_id FROM images WHERE user_id = %s) AS user_images
+            ON b.batch_id = user_images.batch_id
+            WHERE b.batch_id = %s
+        """
+        cursor.execute(batch_query, (current_user.id, batch_id))
         batch_info = cursor.fetchone()
-        
+
         if not batch_info:
-            raise HTTPException(status_code=404, detail="Batch not found")
-        
+            raise HTTPException(status_code=404, detail="Batch not found or you do not have access")
+
         # Get images in batch
         images_query = """
         SELECT id, filename, original_name, file_size, image_width, image_height,
                dominant_color, color_palette, upload_date
         FROM images 
-        WHERE batch_id = %s
+        WHERE batch_id = %s AND user_id = %s
         ORDER BY created_at
         """
         
-        cursor.execute(images_query, (batch_id,))
+        cursor.execute(images_query, (batch_id, current_user.id))
         images = cursor.fetchall()
         
         # Add image URLs and parse JSON
@@ -520,37 +529,32 @@ async def get_batch_images(batch_id: str):
 async def get_images(
     limit: Optional[int] = Query(10, description="Number of images to return"),
     offset: Optional[int] = Query(0, description="Offset for pagination"),
-    batch_id: Optional[str] = Query(None, description="Filter by batch ID")
+    batch_id: Optional[str] = Query(None, description="Filter by batch ID"),
+    current_user: User = Depends(get_current_user)
 ):
     """Get list of uploaded images"""
     try:
         connection = get_database_connection()
         cursor = connection.cursor(dictionary=True)
-                    
         
+        base_query = """
+        SELECT id, filename, original_name, file_size, image_width, image_height,
+               dominant_color, color_palette, upload_date, batch_id, category,clothing_part, 
+               style, occasion, season, temperature_range, gender, material, pattern,
+               created_at
+        FROM images
+        WHERE user_id = %s
+        """
+        params = [current_user.id]
+
         if batch_id:
-            query = """
-            SELECT id, filename, original_name, file_size, image_width, image_height,
-                   dominant_color, color_palette, upload_date, batch_id, category,clothing_part, 
-                   style, occasion, season, temperature_range, gender, material, pattern,
-                   created_at
-            FROM images
-            WHERE batch_id = %s
-            ORDER BY created_at DESC
-            LIMIT %s OFFSET %s
-            """
-            cursor.execute(query, (batch_id, limit, offset))
-        else:
-            query = """
-            SELECT id, filename, original_name, file_size, image_width, image_height,
-                   dominant_color, color_palette, upload_date, batch_id, 
-                   style, occasion, season, temperature_range, gender, material, pattern,
-                   category,clothing_part, created_at
-            FROM images
-            ORDER BY created_at DESC
-            LIMIT %s OFFSET %s
-            """
-            cursor.execute(query, (limit, offset))
+            base_query += " AND batch_id = %s"
+            params.append(batch_id)
+
+        query = base_query + " ORDER BY created_at DESC LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+
+        cursor.execute(query, params)
         
         images = cursor.fetchall()
         
@@ -574,21 +578,21 @@ async def get_images(
             connection.close()
 
 @router.get("/images/{image_id}")
-async def get_image(image_id: str):
+async def get_image(image_id: str, current_user: User = Depends(get_current_user)):
     """Get specific image by ID"""
     try:
         connection = get_database_connection()
         cursor = connection.cursor(dictionary=True)
         
         query = """
-        SELECT * FROM images WHERE id = %s
+        SELECT * FROM images WHERE id = %s AND user_id = %s
         """
         
-        cursor.execute(query, (image_id,))
+        cursor.execute(query, (image_id, current_user.id))
         image = cursor.fetchone()
         
         if not image:
-            raise HTTPException(status_code=404, detail="Image not found")
+            raise HTTPException(status_code=404, detail="Image not found or you do not own it")
         
         # Parse JSON fields
         image["color_palette"] = json.loads(image["color_palette"])
@@ -608,21 +612,21 @@ async def get_image(image_id: str):
             connection.close()
 
 @router.delete("/images/{image_id}")
-async def delete_image(image_id: str):
+async def delete_image(image_id: str, current_user: User = Depends(get_current_user)):
     """Delete an image"""
     try:
         connection = get_database_connection()
         cursor = connection.cursor(dictionary=True)
         
         # Get image info first
-        cursor.execute("SELECT filename FROM images WHERE id = %s", (image_id,))
+        cursor.execute("SELECT filename FROM images WHERE id = %s AND user_id = %s", (image_id, current_user.id))
         image = cursor.fetchone()
         
         if not image:
-            raise HTTPException(status_code=404, detail="Image not found")
+            raise HTTPException(status_code=404, detail="Image not found or you do not own it")
         
         # Delete from database
-        cursor.execute("DELETE FROM images WHERE id = %s", (image_id,))
+        cursor.execute("DELETE FROM images WHERE id = %s AND user_id = %s", (image_id, current_user.id))
         connection.commit()
         
         # Delete file
@@ -642,21 +646,21 @@ async def delete_image(image_id: str):
             connection.close()
 
 @router.delete("/batches/{batch_id}")
-async def delete_batch(batch_id: str):
+async def delete_batch(batch_id: str, current_user: User = Depends(get_current_user)):
     """Delete an entire batch of images"""
     try:
         connection = get_database_connection()
         cursor = connection.cursor(dictionary=True)
         
-        # Get all images in the batch
-        cursor.execute("SELECT filename FROM images WHERE batch_id = %s", (batch_id,))
+        # Get all images in the batch and check ownership
+        cursor.execute("SELECT filename FROM images WHERE batch_id = %s AND user_id = %s", (batch_id, current_user.id))
         images = cursor.fetchall()
         
         if not images:
-            raise HTTPException(status_code=404, detail="Batch not found")
+            raise HTTPException(status_code=404, detail="Batch not found or you do not have access")
         
         # Delete images from database
-        cursor.execute("DELETE FROM images WHERE batch_id = %s", (batch_id,))
+        cursor.execute("DELETE FROM images WHERE batch_id = %s AND user_id = %s", (batch_id, current_user.id))
         
         # Delete batch record
         cursor.execute("DELETE FROM batch_uploads WHERE batch_id = %s", (batch_id,))
@@ -687,8 +691,10 @@ async def delete_batch(batch_id: str):
             connection.close()
 
 @router.get("/analytics")
-async def get_analytics():
+async def get_analytics(current_user: User = Depends(get_current_user)):
     """Get analytics about uploaded images"""
+    if not current_user.role == "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
     try:
         connection = get_database_connection()
         cursor = connection.cursor(dictionary=True)
@@ -787,7 +793,8 @@ async def search_images(
     max_height: Optional[int] = Query(None, description="Maximum image height"),
     batch_id: Optional[str] = Query(None, description="Filter by batch ID"),
     limit: Optional[int] = Query(10, description="Number of results to return"),
-    offset: Optional[int] = Query(0, description="Offset for pagination")
+    offset: Optional[int] = Query(0, description="Offset for pagination"),
+    current_user: User = Depends(get_current_user)
 ):
     """Search images with various filters"""
     try:
@@ -795,8 +802,8 @@ async def search_images(
         cursor = connection.cursor(dictionary=True)
         
         # Build dynamic query
-        where_conditions = []
-        params = []
+        where_conditions = ["user_id = %s"]
+        params = [current_user.id]
         
         if color:
             where_conditions.append("dominant_color = %s")
@@ -829,10 +836,7 @@ async def search_images(
         FROM images
         """
         
-        if where_conditions:
-            query = base_query + " WHERE " + " AND ".join(where_conditions)
-        else:
-            query = base_query
+        query = base_query + " WHERE " + " AND ".join(where_conditions)
         
         query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
         params.extend([limit, offset])
@@ -871,16 +875,16 @@ async def search_images(
 
 
 @router.get("/occasion-weather")
-def recommend_outfits(user_id: str, city: str, country_code: str = "RW", occasion: str = Query(...)):
+def recommend_outfits(request: WeatherOccasionRequest):
     api_key = os.getenv("OPENWEATHERMAP_API_KEY")
     weather_service = WeatherService(api_key=api_key)
-    weather = weather_service.get_current_weather(city, country_code)
+    weather = weather_service.get_current_weather(request.city, request.country_code)
 
-    wardrobe_items = get_user_wardrobe_items(user_id)  # Fetch user's uploaded clothes
+    wardrobe_items = request.wardrobe_items # Fetch user's uploaded clothes
     recommender = SmartOutfitRecommender(weather_service)
     recommender.load_wardrobe(wardrobe_items)
 
-    recommendations = recommender.generate_outfit_combinations(weather, occasion)
+    recommendations = recommender.generate_outfit_combinations(weather, request.occasion)
 
     results = []
     for outfit in recommendations:
