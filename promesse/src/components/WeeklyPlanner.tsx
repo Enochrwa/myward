@@ -19,6 +19,13 @@ type DailyPlan = {
   weather_override?: any;
 };
 
+type WeatherData = {
+  temp_max: number;
+  temp_min: number;
+  weather: string;
+  description: string;
+};
+
 type WardrobeItem = { id: string; [key: string]: any };
 
 type OutfitItem = {
@@ -51,6 +58,7 @@ const WeeklyPlanner: React.FC = () => {
   const [recommendations, setRecommendations] = useState<
     Record<string, OutfitRecommendation[]>
   >({});
+  const [weather, setWeather] = useState<Record<string, WeatherData>>({});
   const [loading, setLoading] = useState(false);
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [lockedOutfits, setLockedOutfits] = useState<Record<string, OutfitRecommendation>>(
@@ -122,8 +130,10 @@ const WeeklyPlanner: React.FC = () => {
           creativity
         }
       );
-      // Merge new into existing recommendations
-      setRecommendations((prev) => ({ ...prev, ...resp.data }));
+      // Merge new into existing recommendations and weather
+      const { recommendations: newRecs, weather: newWeather } = resp.data;
+      setRecommendations((prev) => ({ ...prev, ...newRecs }));
+      setWeather((prev) => ({ ...prev, ...newWeather }));
     } catch (err) {
       console.error('Error planning week:', err);
     } finally {
@@ -230,6 +240,25 @@ const WeeklyPlanner: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {/* Recommendation preview */}
+                  {/* Weather display */}
+                  <div className="mt-4 text-sm">
+                    <h4 className="font-semibold text-gray-600">Weather</h4>
+                    {weather[day.date] ? (
+                      <div className="text-xs">
+                        <p>
+                          {weather[day.date].temp_min.toFixed(0)}°C -{' '}
+                          {weather[day.date].temp_max.toFixed(0)}°C
+                        </p>
+                        <p className="capitalize">
+                          {weather[day.date].description}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400">No forecast</p>
+                    )}
+                  </div>
 
                   {/* Recommendation preview */}
                   <div className="mt-4">

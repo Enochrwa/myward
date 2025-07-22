@@ -383,19 +383,29 @@ def plan_weekly_outfits_route(request: WeeklyPlanRequest):
     )
 
     # Format response
-    response_data = {}
+    response_data = {"recommendations": {}, "weather": {}}
     for date, outfits in weekly_outfits.items():
-        response_data[date] = [
+        # Get weather for the date
+        weather = weather_service.get_weather_for_date(request.location, date)
+        if weather:
+            response_data["weather"][date] = {
+                "temp_min": weather.temperature,  # Assuming temp is daily avg
+                "temp_max": weather.temperature,
+                "weather": weather.weather_condition,
+                "description": weather.description,
+            }
+
+        response_data["recommendations"][date] = [
             {
                 "score": outfit.overall_score(),
                 "items": [
                     {
                         "id": item.id,
                         "category": item.category,
-                        "image_url": build_image_url(item.filename)
+                        "image_url": build_image_url(item.filename),
                     }
                     for item in outfit.items
-                ]
+                ],
             }
             for outfit in outfits
         ]

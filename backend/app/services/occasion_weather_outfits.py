@@ -67,12 +67,16 @@ class WeatherData:
 
     
 class WeatherService:
-    """Service to fetch weather data from OpenWeatherAPI"""
-    
+    """Service to fetch weather data from OpenWeatherMap API"""
+
     def __init__(self, api_key: str):
         self.api_key = api_key
+        self.geo_url = "http://api.openweathermap.org/geo/1.0/direct"
+        # Use v2.5 One Call (free tier)
+        self.forecast_url = "https://api.openweathermap.org/data/2.5/onecall"
         self.base_url = "http://api.openweathermap.org/data/2.5/weather"
-    
+
+
     def get_current_weather(self, city: str, country_code: str = None) -> WeatherData:
         """Fetch current weather data"""
         location = f"{city},{country_code}" if country_code else city
@@ -102,6 +106,64 @@ class WeatherService:
             )
         except requests.RequestException as e:
             raise Exception(f"Failed to fetch weather data: {e}")
+
+
+    def get_coordinates(self, city: str) -> Optional[Tuple[float, float]]:
+        """Get latitude and longitude for a city."""
+        params = {'q': city, 'limit': 1, 'appid': self.api_key}
+        try:
+            resp = requests.get(self.geo_url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            if data:
+                return data[0]['lat'], data[0]['lon']
+        except requests.RequestException as e:
+            print(f"Error fetching coordinates: {e}")
+        return None
+
+    def get_daily_forecast(self, lat: float, lon: float) -> List[Dict]:
+        """Fetch 7-day daily forecast."""
+        params = {
+            "lat": lat,
+            "lon": lon,
+            "exclude": "current,minutely,hourly,alerts",
+            "units": "metric",
+            "appid": self.api_key
+        }
+        try:
+            resp = requests.get(self.forecast_url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("daily", [])
+        except requests.RequestException as e:
+            raise Exception(f"Failed to fetch forecast: {e}")
+
+    def get_weather_for_date(self, city: str, target_date: str) -> Optional[WeatherData]:
+        """Get weather for a specific date from the forecast."""
+        coords = self.get_coordinates(city)
+        if not coords:
+            return None
+        
+        forecast = self.get_daily_forecast(coords[0], coords[1])
+        target_dt = datetime.strptime(target_date, "%Y-%m-%d").date()
+
+        for day in forecast:
+            forecast_date = datetime.utcfromtimestamp(day["dt"]).date()
+            if forecast_date == target_dt:
+                return WeatherData(
+                    temperature=day["temp"]["day"],
+                    feels_like=day["feels_like"]["day"],
+                    humidity=day["humidity"],
+                    pressure=day["pressure"],
+                    visibility=day.get("visibility", 10000),
+                    wind_speed=day["wind_speed"],
+                    weather_condition=day["weather"][0]["main"],
+                    description=day["weather"][0]["description"],
+                    cloud_coverage=day["clouds"],
+                    sunrise=day["sunrise"],
+                    sunset=day["sunset"]
+                )
+        return None
 
 
 @dataclass
@@ -526,40 +588,63 @@ class SmartOutfitRecommender:
     
     def plan_weekly_outfits(self, weekly_plan: Dict[str, Dict], location: str, creativity: float = 0.5) -> Dict[str, List[OutfitRecommendation]]:
         """
-        Generate outfit recommendations for a weekly plan, ensuring variety and handling small wardrobes.
+        Generate outfit recommendations for a weekly plan using daily forecasts.
         """
         weekly_outfits = {}
-        # Keep track of how many times each item is used to ensure variety
         item_usage_count = {}
         
-        sorted_dates = sorted(weekly_plan.keys())
+        # Fetch forecast for the location once
+        coords = self.weather_service.get_coordinates(location)
+        if not coords:
+            print(f"Could not get coordinates for {location}")
+            return {date: [] for date in weekly_plan}
 
-        for date_str in sorted_dates:
-            plan_info = weekly_plan[date_str]
+        daily_forecasts = self.weather_service.get_daily_forecast(coords[0], coords[1])
+        
+        # Create a lookup for weather by date
+        weather_map = {
+            datetime.utcfromtimestamp(day["dt"]).strftime("%Y-%m-%d"): day
+            for day in daily_forecasts
+        }
+
+        for date_str, plan_info in weekly_plan.items():
             try:
-                # Use provided weather or fetch new data
-                weather = plan_info.get('weather_override') or self.weather_service.get_current_weather(location)
+                weather_data = weather_map.get(date_str)
+                if not weather_data:
+                    print(f"No weather forecast available for {date_str}")
+                    weekly_outfits[date_str] = []
+                    continue
+
+                weather = WeatherData(
+                    temperature=weather_data["temp"]["day"],
+                    feels_like=weather_data["feels_like"]["day"],
+                    humidity=weather_data["humidity"],
+                    pressure=weather_data["pressure"],
+                    visibility=weather_data.get("visibility", 10000),
+                    wind_speed=weather_data["wind_speed"],
+                    weather_condition=weather_data["weather"][0]["main"],
+                    description=weather_data["weather"][0]["description"],
+                    cloud_coverage=weather_data["clouds"],
+                    sunrise=weather_data["sunrise"],
+                    sunset=weather_data["sunset"]
+                )
+                
                 occasion = plan_info['occasion']
 
-                # Generate a pool of diverse outfit options
                 outfits = self.generate_outfit_combinations(
                     weather, occasion, max_combinations=15, creativity=creativity
                 )
 
                 if outfits:
-                    # Score outfits based on quality and item reuse
                     def calculate_outfit_desirability(outfit):
                         reuse_penalty = sum(item_usage_count.get(item.id, 0) for item in outfit.items)
-                        # The score is penalized by how many times its items have been used
                         return outfit.overall_score() - (reuse_penalty * 0.1)
 
-                    # Sort outfits by this new desirability score
                     outfits.sort(key=calculate_outfit_desirability, reverse=True)
                     
                     best_outfit = outfits[0]
                     weekly_outfits[date_str] = [best_outfit]
 
-                    # Update usage count for the items in the chosen outfit
                     for item in best_outfit.items:
                         item_usage_count[item.id] = item_usage_count.get(item.id, 0) + 1
                 else:
