@@ -5,6 +5,8 @@ from ..model import User, WeeklyPlan, WeeklyPlanDayOutfit
 from ..db.database import get_db
 from ..security import get_current_user
 from pydantic import BaseModel
+from sqlalchemy.orm import joinedload
+from ..model import Outfit, WardrobeItem, ClothingCategory, User
 import os
 from ..services.occasion_weather_outfits import WeatherService, SmartOutfitRecommender, WeatherData, WeatherOccasionRequest
 import json
@@ -21,6 +23,11 @@ class OutfitItemResponse(BaseModel):
     id: int
     image_url: str
     category: str
+    name: str
+    brand: Optional[str]
+    material: Optional[str]
+    style: Optional[str]
+    dominant_color_name: Optional[str]
 
 class DayOutfitResponse(BaseModel):
     id: int
@@ -43,7 +50,7 @@ class WeeklyPlanResponse(BaseModel):
     days: List[DayResponse]
 
     class Config:
-        orm_mode = True
+        ofrom_attributes = True
 
 @router.post("/", response_model=WeeklyPlanResponse)
 def create_weekly_plan(
@@ -77,26 +84,53 @@ def create_weekly_plan(
     db.commit()
     db.refresh(db_plan)
 
+    # After committing, the 'days' objects are stale. We need to refetch them.
+    db.refresh(db_plan)
+    
+    # Construct the full response with nested outfit details
+    days_response = []
+    for day in db_plan.daily_outfits:
+        outfit_response = None
+        if day.outfit:
+            outfit_response = DayOutfitResponse(
+                id=day.outfit.id,
+                name=day.outfit.name,
+                items=[
+                    OutfitItemResponse(
+                        id=item.id,
+                        image_url=item.image_url,
+                        category=item.category_obj.name,
+                        name=item.name,
+                        brand=item.brand,
+                        material=item.material,
+                        style=item.style,
+                        dominant_color_name=item.dominant_color_name,
+                    )
+                    for item in day.outfit.items
+                ],
+            )
+        days_response.append(
+            DayResponse(
+                id=day.id,
+                day_of_week=day.day_of_week,
+                date=str(day.date),
+                occasion=day.occasion,
+                outfit=outfit_response,
+                weather_forecast=json.loads(day.weather_forecast)
+                if day.weather_forecast
+                else None,
+            )
+        )
+
     return WeeklyPlanResponse(
         id=db_plan.id,
         name=db_plan.name,
         start_date=str(db_plan.start_date),
         end_date=str(db_plan.end_date),
-        days=[
-            {
-                "id": day.id,
-                "day_of_week": day.day_of_week,
-                "date": str(day.date),
-                "occasion": day.occasion,
-                "outfit_id": day.outfit_id,
-                "weather_forecast": json.loads(day.weather_forecast) if day.weather_forecast else None,
-            }
-            for day in days
-        ],
+        days=days_response,
     )
 
-from sqlalchemy.orm import joinedload
-from ..model import Outfit, WardrobeItem, ClothingCategory
+
 
 @router.get("/", response_model=List[WeeklyPlanResponse])
 def get_weekly_plans(
@@ -129,6 +163,11 @@ def get_weekly_plans(
                             id=item.id,
                             image_url=item.image_url,
                             category=item.category_obj.name,
+                            name=item.name,
+                            brand=item.brand,
+                            material=item.material,
+                            style=item.style,
+                            dominant_color_name=item.dominant_color_name,
                         )
                         for item in day.outfit.items
                     ],
@@ -189,6 +228,11 @@ def get_weekly_plan(
                         id=item.id,
                         image_url=item.image_url,
                         category=item.category_obj.name,
+                        name=item.name,
+                        brand=item.brand,
+                        material=item.material,
+                        style=item.style,
+                        dominant_color_name=item.dominant_color_name,
                     )
                     for item in day.outfit.items
                 ],
@@ -254,24 +298,49 @@ def update_weekly_plan(
 
     db.commit()
     db.refresh(db_plan)
+    db.refresh(db_plan)
+
+    # Construct the full response with nested outfit details
+    days_response = []
+    for day in db_plan.daily_outfits:
+        outfit_response = None
+        if day.outfit:
+            outfit_response = DayOutfitResponse(
+                id=day.outfit.id,
+                name=day.outfit.name,
+                items=[
+                    OutfitItemResponse(
+                        id=item.id,
+                        image_url=item.image_url,
+                        category=item.category_obj.name,
+                        name=item.name,
+                        brand=item.brand,
+                        material=item.material,
+                        style=item.style,
+                        dominant_color_name=item.dominant_color_name,
+                    )
+                    for item in day.outfit.items
+                ],
+            )
+        days_response.append(
+            DayResponse(
+                id=day.id,
+                day_of_week=day.day_of_week,
+                date=str(day.date),
+                occasion=day.occasion,
+                outfit=outfit_response,
+                weather_forecast=json.loads(day.weather_forecast)
+                if day.weather_forecast
+                else None,
+            )
+        )
+
     return WeeklyPlanResponse(
         id=db_plan.id,
         name=db_plan.name,
         start_date=str(db_plan.start_date),
         end_date=str(db_plan.end_date),
-        days=[
-            {
-                "id": day.id,
-                "day_of_week": day.day_of_week,
-                "date": str(day.date),
-                "occasion": day.occasion,
-                "outfit_id": day.outfit_id,
-                "weather_forecast": json.loads(day.weather_forecast)
-                if day.weather_forecast
-                else None,
-            }
-            for day in days
-        ],
+        days=days_response,
     )
 
 @router.delete("/{plan_id}")
@@ -347,7 +416,11 @@ def plan_weekly_outfits_route(request: WeeklyPlanRequest):
                     "items": [
                         {
                             "id": item.id,
+                            "name": item.original_name,
                             "category": item.category,
+                            "material": item.material,
+                            "style": item.style,
+                            "dominant_color_name": item.dominant_color,
                             "image_url": f"http://127.0.0.1:8000/uploads/{item.filename}",
                         }
                         for item in outfit.items

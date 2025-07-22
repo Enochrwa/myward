@@ -13,14 +13,38 @@ export interface SavedWeeklyPlansProps {
   onClose: () => void;
 }
 
+interface OutfitItem {
+  id: number;
+  image_url: string;
+  category: string;
+  name: string;
+  brand?: string;
+  material?: string;
+  style?: string;
+  dominant_color_name?: string;
+}
+
+interface Outfit {
+  id: number;
+  name: string;
+  items: OutfitItem[];
+}
+
+interface Day {
+  id: number;
+  day_of_week: string;
+  date: string;
+  occasion: string;
+  outfit: Outfit | null;
+  weather_forecast: any;
+}
+
 interface WeeklyPlanFromAPI {
   id: number;
   name: string;
-  start_date: string; // ISO Date string
-  end_date: string;   // ISO Date string
-  daily_outfits: Record<string, number | null>; // day_of_week -> outfit_id
-  created_at: string; // ISO DateTime string
-  // user_id and updated_at are also available but may not be needed for display
+  start_date: string;
+  end_date: string;
+  days: Day[];
 }
 
 // Helper to format date range
@@ -30,9 +54,6 @@ const formatDateRange = (startDateStr: string, endDateStr: string) => {
   const endDate = new Date(endDateStr).toLocaleDateString(undefined, options);
   return `${startDate} - ${endDate}`;
 };
-
-const daysOfWeek = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-
 
 const SavedWeeklyPlans = ({ isOpen, onClose }: SavedWeeklyPlansProps) => {
   const [savedPlans, setSavedPlans] = useState<WeeklyPlanFromAPI[]>([]);
@@ -53,7 +74,7 @@ const SavedWeeklyPlans = ({ isOpen, onClose }: SavedWeeklyPlansProps) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiClient<WeeklyPlanFromAPI[]>('/weekly-plans/', { token });
+      const data = await apiClient<WeeklyPlanFromAPI[]>('/weekly-plan/', { token });
       setSavedPlans(data || []);
     } catch (err: any) {
       console.error("Fetch Saved Plans Error:", err);
@@ -75,7 +96,6 @@ const SavedWeeklyPlans = ({ isOpen, onClose }: SavedWeeklyPlansProps) => {
     } else {
       // Reset state when closed
       setSelectedPlan(null);
-      // setSavedPlans([]); // Optional: clear plans when closed or keep them cached
     }
   }, [isOpen, fetchSavedPlans]);
 
@@ -85,7 +105,7 @@ const SavedWeeklyPlans = ({ isOpen, onClose }: SavedWeeklyPlansProps) => {
       return;
     }
     try {
-      await apiClient(`/weekly-plans/${planId}/`, { method: 'DELETE', token });
+      await apiClient(`/weekly-plan/${planId}/`, { method: 'DELETE', token });
       setSavedPlans(prevPlans => prevPlans.filter(p => p.id !== planId));
       if (selectedPlan?.id === planId) {
         setSelectedPlan(null); // Clear selection if deleted plan was selected
@@ -104,17 +124,6 @@ const SavedWeeklyPlans = ({ isOpen, onClose }: SavedWeeklyPlansProps) => {
       });
     }
   };
-
-  const getDayName = (dateStr: string, dayIndex: number, planStartDateStr: string): string => {
-    const planStartDate = new Date(planStartDateStr);
-    const currentDayDate = new Date(planStartDate);
-    currentDayDate.setDate(planStartDate.getDate() + dayIndex);
-    
-    const dayName = currentDayDate.toLocaleDateString(undefined, { weekday: 'long' });
-    // Fallback to provided key if needed, though daily_outfits keys are 'monday', 'tuesday' etc.
-    return dayName.charAt(0).toUpperCase() + dayName.slice(1);
-  };
-
 
   if (!isOpen) return null;
 
@@ -163,33 +172,31 @@ const SavedWeeklyPlans = ({ isOpen, onClose }: SavedWeeklyPlansProps) => {
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   {formatDateRange(plan.start_date, plan.end_date)}
                 </p>
-                 <p className="text-xs text-gray-500 dark:text-gray-500">
-                  Created: {new Date(plan.created_at).toLocaleDateString()}
-                </p>
               </CardHeader>
               <CardContent className="p-3 xs:p-4 pt-0 flex-grow flex flex-col justify-between">
                 <div className="space-y-1 xs:space-y-2 mb-3 xs:mb-4">
-                  {daysOfWeek.slice(0,3).map(dayKey => {
-                    const outfitId = plan.daily_outfits[dayKey];
-                    if (outfitId) {
+                  {plan.days.slice(0, 3).map(day => {
+                    if (day.outfit) {
                       return (
-                        <div key={dayKey} className="flex items-center gap-1 xs:gap-2 text-xs">
+                        <div key={day.id} className="flex items-center gap-1 xs:gap-2 text-xs">
                           <PackageOpen size={10} className="xs:w-3 xs:h-3 text-owis-sage" />
-                          <span className="font-medium capitalize">{dayKey}:</span>
-                          <span className="text-gray-600 dark:text-gray-400 truncate">Outfit ID {outfitId}</span>
+                          <span className="font-medium capitalize">{day.day_of_week}:</span>
+                          <span className="text-gray-600 dark:text-gray-400 truncate">
+                            {day.outfit.name}
+                          </span>
                         </div>
                       );
                     }
                     return null;
                   })}
-                  {Object.values(plan.daily_outfits).filter(id => id !== null).length > 3 && (
-                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                       +{Object.values(plan.daily_outfits).filter(id => id !== null).length - 3} more days with outfits
-                     </p>
+                  {plan.days.filter(d => d.outfit).length > 3 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      +{plan.days.filter(d => d.outfit).length - 3} more days with outfits
+                    </p>
                   )}
-                   {Object.values(plan.daily_outfits).filter(id => id !== null).length === 0 && (
-                     <p className="text-xs text-gray-500 dark:text-gray-400">No outfits assigned to this plan yet.</p>
-                   )}
+                  {plan.days.filter(d => d.outfit).length === 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">No outfits assigned to this plan yet.</p>
+                  )}
                 </div>
                 <Button
                   onClick={() => setSelectedPlan(plan)}
@@ -209,20 +216,6 @@ const SavedWeeklyPlans = ({ isOpen, onClose }: SavedWeeklyPlansProps) => {
   const renderSelectedPlanDetails = () => {
     if (!selectedPlan) return null;
 
-    // Calculate actual dates for each day of the plan
-    const planStartDate = new Date(selectedPlan.start_date);
-    const planDays = daysOfWeek.map((dayKey, index) => {
-        const currentDate = new Date(planStartDate);
-        currentDate.setDate(planStartDate.getDate() + index);
-        return {
-            key: dayKey, // monday, tuesday etc.
-            displayDate: currentDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-            dayName: currentDate.toLocaleDateString(undefined, { weekday: 'long' }),
-            outfitId: selectedPlan.daily_outfits[dayKey]
-        };
-    });
-
-
     return (
       <div className="space-y-4 xs:space-y-6">
         <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 xs:gap-3">
@@ -240,27 +233,37 @@ const SavedWeeklyPlans = ({ isOpen, onClose }: SavedWeeklyPlansProps) => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 xs:gap-4">
-          {planDays.map((dayInfo) => (
-            <Card key={dayInfo.key} className="hover:shadow-lg transition-shadow dark:border-gray-700">
+          {selectedPlan.days.map((day) => (
+            <Card key={day.id} className="hover:shadow-lg transition-shadow dark:border-gray-700">
               <CardHeader className="pb-2 xs:pb-3 p-3 xs:p-4">
-                <CardTitle className="text-sm xs:text-base capitalize">{dayInfo.dayName}</CardTitle>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{dayInfo.displayDate}</p>
+                <CardTitle className="text-sm xs:text-base capitalize">{day.day_of_week}</CardTitle>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{day.date}</p>
               </CardHeader>
               <CardContent className="space-y-2 xs:space-y-3 p-3 xs:p-4 pt-0">
-                {dayInfo.outfitId ? (
-                  <>
-                    <div className="flex items-center gap-1 xs:gap-2">
-                      <PackageOpen size={12} className="xs:w-4 xs:h-4 text-owis-sage" />
-                      <span className="text-xs xs:text-sm font-medium">Outfit ID: {dayInfo.outfitId}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                      (Full outfit details would require further integration or backend changes to include them here.)
-                    </p>
-                    {/* Placeholder for where outfit image/details might go if available */}
-                    <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
-                       <span className="text-xs text-gray-400 dark:text-gray-500">Outfit Preview</span>
-                    </div>
-                  </>
+                {day.outfit ? (
+                  <div className="flex flex-wrap gap-2">
+                    {day.outfit.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="h-20 w-20 rounded-lg shadow-md overflow-hidden group relative"
+                      >
+                        <img
+                          src={item.image_url}
+                          alt={item.category}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="text-white text-xs p-1 text-center">
+                            <p className="font-bold">{item.name}</p>
+                            <p>{item.brand}</p>
+                            <p>{item.material}</p>
+                            <p>{item.style}</p>
+                            <p>{item.dominant_color_name}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <p className="text-xs xs:text-sm text-gray-500 dark:text-gray-400 italic">No outfit assigned for this day.</p>
                 )}

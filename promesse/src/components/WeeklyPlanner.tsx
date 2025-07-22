@@ -33,6 +33,11 @@ type OutfitItem = {
   id: number;
   image_url: string;
   category: string;
+  name: string;
+  brand?: string;
+  material?: string;
+  style?: string;
+  dominant_color_name?: string;
 };
 
 type Outfit = {
@@ -410,13 +415,22 @@ const WeeklyPlanner: React.FC = () => {
                         {topRec.items.map((item) => (
                           <div
                             key={item.id}
-                            className="h-20 w-20 rounded-lg shadow-md overflow-hidden"
+                            className="h-20 w-20 rounded-lg shadow-md overflow-hidden group relative"
                           >
                             <img
                               src={item.image_url}
                               alt={item.category}
                               className="h-full w-full object-cover"
                             />
+                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="text-white text-xs p-1 text-center">
+                                <p className="font-bold">{item.name}</p>
+                                <p>{item.brand}</p>
+                                <p>{item.material}</p>
+                                <p>{item.style}</p>
+                                <p>{item.dominant_color_name}</p>
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
