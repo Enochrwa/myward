@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from ..model import User, WeeklyPlan, WeeklyPlanDayOutfit
 from ..db.database import get_db
 from ..security import get_current_user
@@ -17,12 +17,30 @@ class WeeklyPlanCreate(BaseModel):
     end_date: str
     days: List[Dict[str, Any]]
 
+class OutfitItemResponse(BaseModel):
+    id: int
+    image_url: str
+    category: str
+
+class DayOutfitResponse(BaseModel):
+    id: int
+    name: str
+    items: List[OutfitItemResponse]
+
+class DayResponse(BaseModel):
+    id: int
+    day_of_week: str
+    date: str
+    occasion: str
+    outfit: Optional[DayOutfitResponse]
+    weather_forecast: Optional[Dict[str, Any]]
+
 class WeeklyPlanResponse(BaseModel):
     id: int
     name: str
     start_date: str
     end_date: str
-    days: List[Dict[str, Any]]
+    days: List[DayResponse]
 
     class Config:
         orm_mode = True
@@ -77,33 +95,63 @@ def create_weekly_plan(
         ],
     )
 
+from sqlalchemy.orm import joinedload
+from ..model import Outfit, WardrobeItem, ClothingCategory
+
 @router.get("/", response_model=List[WeeklyPlanResponse])
 def get_weekly_plans(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    plans = db.query(WeeklyPlan).filter(WeeklyPlan.user_id == current_user.id).all()
+    plans = (
+        db.query(WeeklyPlan)
+        .filter(WeeklyPlan.user_id == current_user.id)
+        .options(
+            joinedload(WeeklyPlan.daily_outfits)
+            .joinedload(WeeklyPlanDayOutfit.outfit)
+            .joinedload(Outfit.items)
+            .joinedload(WardrobeItem.category_obj)
+        )
+        .all()
+    )
+
     response = []
     for plan in plans:
+        days_response = []
+        for day in plan.daily_outfits:
+            outfit_response = None
+            if day.outfit:
+                outfit_response = DayOutfitResponse(
+                    id=day.outfit.id,
+                    name=day.outfit.name,
+                    items=[
+                        OutfitItemResponse(
+                            id=item.id,
+                            image_url=item.image_url,
+                            category=item.category_obj.name,
+                        )
+                        for item in day.outfit.items
+                    ],
+                )
+            days_response.append(
+                DayResponse(
+                    id=day.id,
+                    day_of_week=day.day_of_week,
+                    date=str(day.date),
+                    occasion=day.occasion,
+                    outfit=outfit_response,
+                    weather_forecast=json.loads(day.weather_forecast)
+                    if day.weather_forecast
+                    else None,
+                )
+            )
         response.append(
             WeeklyPlanResponse(
                 id=plan.id,
                 name=plan.name,
                 start_date=str(plan.start_date),
                 end_date=str(plan.end_date),
-                days=[
-                    {
-                        "id": day.id,
-                        "day_of_week": day.day_of_week,
-                        "date": str(day.date),
-                        "occasion": day.occasion,
-                        "outfit_id": day.outfit_id,
-                        "weather_forecast": json.loads(day.weather_forecast)
-                        if day.weather_forecast
-                        else None,
-                    }
-                    for day in plan.daily_outfits
-                ],
+                days=days_response,
             )
         )
     return response
@@ -118,28 +166,52 @@ def get_weekly_plan(
     plan = (
         db.query(WeeklyPlan)
         .filter(WeeklyPlan.id == plan_id, WeeklyPlan.user_id == current_user.id)
+        .options(
+            joinedload(WeeklyPlan.daily_outfits)
+            .joinedload(WeeklyPlanDayOutfit.outfit)
+            .joinedload(Outfit.items)
+            .joinedload(WardrobeItem.category_obj)
+        )
         .first()
     )
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
+
+    days_response = []
+    for day in plan.daily_outfits:
+        outfit_response = None
+        if day.outfit:
+            outfit_response = DayOutfitResponse(
+                id=day.outfit.id,
+                name=day.outfit.name,
+                items=[
+                    OutfitItemResponse(
+                        id=item.id,
+                        image_url=item.image_url,
+                        category=item.category_obj.name,
+                    )
+                    for item in day.outfit.items
+                ],
+            )
+        days_response.append(
+            DayResponse(
+                id=day.id,
+                day_of_week=day.day_of_week,
+                date=str(day.date),
+                occasion=day.occasion,
+                outfit=outfit_response,
+                weather_forecast=json.loads(day.weather_forecast)
+                if day.weather_forecast
+                else None,
+            )
+        )
+
     return WeeklyPlanResponse(
         id=plan.id,
         name=plan.name,
         start_date=str(plan.start_date),
         end_date=str(plan.end_date),
-        days=[
-            {
-                "id": day.id,
-                "day_of_week": day.day_of_week,
-                "date": str(day.date),
-                "occasion": day.occasion,
-                "outfit_id": day.outfit_id,
-                "weather_forecast": json.loads(day.weather_forecast)
-                if day.weather_forecast
-                else None,
-            }
-            for day in plan.daily_outfits
-        ],
+        days=days_response,
     )
 
 

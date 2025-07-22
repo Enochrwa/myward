@@ -29,14 +29,24 @@ type WeatherData = {
 type WardrobeItem = { id: string; [key: string]: any };
 
 type OutfitItem = {
-  id: string;
-  category: string;
+  id: number;
   image_url: string;
+  category: string;
 };
 
-type OutfitRecommendation = {
-  score: number;
+type Outfit = {
+  id: number;
+  name: string;
   items: OutfitItem[];
+};
+
+type Day = {
+  id: number;
+  day_of_week: string;
+  date: string;
+  occasion: string;
+  outfit: Outfit | null;
+  weather_forecast: any;
 };
 
 type WeeklyPlan = {
@@ -44,12 +54,12 @@ type WeeklyPlan = {
   name: string;
   start_date: string;
   end_date: string;
-  days: {
-    date: string;
-    day_of_week: string;
-    occasion: string;
-    outfit_id: string | null;
-  }[];
+  days: Day[];
+};
+
+type OutfitRecommendation = {
+  score: number;
+  items: OutfitItem[];
 };
 
 const occasionOptions = [
@@ -200,8 +210,8 @@ const WeeklyPlanner: React.FC = () => {
         date: day.date,
         day_of_week: day.day,
         occasion: day.occasion,
-        outfit_id: lockedOutfits[day.date] ? lockedOutfits[day.date].items[0].id : null
-      }))
+        outfit_id: lockedOutfits[day.date] ? (lockedOutfits[day.date] as any).id : null,
+      })),
     };
 
     try {
@@ -249,11 +259,26 @@ const WeeklyPlanner: React.FC = () => {
     const loadedWeekDays = plan.days.map((day) => ({
       date: day.date,
       day: day.day_of_week,
-      occasion: day.occasion
+      occasion: day.occasion,
     }));
     setWeekDays(loadedWeekDays);
-    // Note: Loading recommendations and locked outfits would require more complex logic
-    // to fetch outfit details based on outfit_id. For now, we just load the plan structure.
+
+    const newRecommendations: Record<string, OutfitRecommendation[]> = {};
+    const newLockedOutfits: Record<string, OutfitRecommendation> = {};
+
+    plan.days.forEach((day) => {
+      if (day.outfit) {
+        const outfitAsRecommendation = {
+          score: 0, // Score is not available in the saved plan
+          ...day.outfit,
+        };
+        newRecommendations[day.date] = [outfitAsRecommendation];
+        newLockedOutfits[day.date] = outfitAsRecommendation;
+      }
+    });
+
+    setRecommendations(newRecommendations);
+    setLockedOutfits(newLockedOutfits);
   };
 
   return (
