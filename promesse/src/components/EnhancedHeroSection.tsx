@@ -35,7 +35,7 @@ const EnhancedHeroSection = () => {
           >
             <Award className="w-4 h-4 xs:w-5 xs:h-5 text-teal-400 animate-pulse" />
             <span className="text-white text-xs xs:text-sm font-semibold tracking-wide">
-              <span className="hidden xs:inline">Award-Winning AI Fashion Platform</span>
+              <span className="hidden xs:inline">AI-Powered Digital Wardrobe Platform</span>
               <span className="xs:hidden">Award-Winning Platform</span>
             </span>
             <div className="flex space-x-1">

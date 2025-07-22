@@ -340,7 +340,7 @@ class SmartOutfitRecommender:
         occasion_suitable = self.filter_by_occasion(weather_suitable, occasion)
 
         # Group by clothing parts
-        clothing_groups = {part: [] for part in ['top', 'bottom', 'footwear', 'accessory']}
+        clothing_groups = {part: [] for part in ['top', 'bottom', 'full_body', 'footwear', 'accessory']}
         for item in occasion_suitable:
             part = item.clothing_part
             if part in clothing_groups:
@@ -352,65 +352,63 @@ class SmartOutfitRecommender:
 
         tops = clothing_groups.get('top', [])
         bottoms = clothing_groups.get('bottom', [])
+        full_bodies = clothing_groups.get('full_body', [])
         footwear = clothing_groups.get('footwear', [])
+        accessories = clothing_groups.get('accessory', [])
 
         # Sort items by seasonal compatibility for better selection
-        for group in [tops, bottoms, footwear]:
+        for group in [tops, bottoms, full_bodies, footwear, accessories]:
             group.sort(key=lambda x: self.calculate_season_compatibility(x), reverse=True)
 
-        if not tops or not bottoms or not footwear:
-            # Not enough items for a full outfit, suggest partials
-            partial_outfits = []
-            for item in occasion_suitable:
-                weather_suit = self.calculate_enhanced_weather_suitability([item], weather)
-                occasion_match = self.calculate_occasion_match([item], occasion)
-                if weather_suit > 0.7 and occasion_match > 0.7:
-                    partial_outfits.append(OutfitRecommendation(
-                        items=[item],
-                        compatibility_score=1.0,
-                        weather_suitability=weather_suit,
-                        occasion_match=occasion_match,
-                        style_coherence=1.0,
-                        color_harmony=1.0
-                    ))
-            return sorted(partial_outfits, key=lambda x: x.overall_score(), reverse=True)[:max_combinations]
+        # --- Full outfit combinations (top + bottom + footwear) ---
+        if tops and bottoms and footwear:
+            combination_attempts = 0
+            max_attempts = min(len(tops) * len(bottoms) * len(footwear), 200)
+            for top in tops:
+                for bottom in bottoms:
+                    for shoe in footwear:
+                        combination_attempts += 1
+                        if combination_attempts > max_attempts: break
+                        combo_signature = frozenset([top.id, bottom.id, shoe.id])
+                        if combo_signature in used_item_combinations: continue
+                        used_item_combinations.add(combo_signature)
+                        combinations.append(self._create_recommendation([top, bottom, shoe], weather, occasion, creativity))
 
-        combination_attempts = 0
-        max_attempts = min(len(tops) * len(bottoms) * len(footwear), 500)
-
-        for top in tops:
-            for bottom in bottoms:
+        # --- Full body outfit combinations (full_body + footwear) ---
+        if full_bodies and footwear:
+            for full_body_item in full_bodies:
                 for shoe in footwear:
-                    combination_attempts += 1
-                    if combination_attempts > max_attempts: break
-
-                    combo_signature = frozenset([top.id, bottom.id, shoe.id])
+                    combo_signature = frozenset([full_body_item.id, shoe.id])
                     if combo_signature in used_item_combinations: continue
-
-                    outfit_items = [top, bottom, shoe]
                     used_item_combinations.add(combo_signature)
+                    combinations.append(self._create_recommendation([full_body_item, shoe], weather, occasion, creativity))
 
-                    # Calculate scores with creativity factor
-                    compatibility = self.calculate_visual_compatibility(outfit_items)
-                    weather_suit = self.calculate_enhanced_weather_suitability(outfit_items, weather)
-                    occasion_match = self.calculate_occasion_match(outfit_items, occasion)
-                    style_coherence = self.calculate_style_coherence(outfit_items)
-                    color_harmony = self.calculate_color_harmony(outfit_items)
-
-                    # Apply creativity bonus
-                    creativity_bonus = 1.0 + (creativity * 0.2)
-                    recommendation = OutfitRecommendation(
-                        items=outfit_items,
-                        compatibility_score=min(1.0, compatibility * creativity_bonus),
-                        weather_suitability=weather_suit,
-                        occasion_match=min(1.0, occasion_match * creativity_bonus),
-                        style_coherence=min(1.0, style_coherence * creativity_bonus),
-                        color_harmony=min(1.0, color_harmony * creativity_bonus)
-                    )
-                    combinations.append(recommendation)
-                    if len(combinations) >= max_combinations * 2: break
-                if len(combinations) >= max_combinations * 2: break
-            if len(combinations) >= max_combinations * 2: break
+        # --- Partial outfit combinations (for small wardrobes) ---
+        if not combinations or len(combinations) < max_combinations:
+            # (Top + Bottom)
+            if tops and bottoms:
+                for top in tops:
+                    for bottom in bottoms:
+                        combo_signature = frozenset([top.id, bottom.id])
+                        if combo_signature in used_item_combinations: continue
+                        used_item_combinations.add(combo_signature)
+                        combinations.append(self._create_recommendation([top, bottom], weather, occasion, creativity))
+            # (Top + Footwear)
+            if tops and footwear:
+                for top in tops:
+                    for shoe in footwear:
+                        combo_signature = frozenset([top.id, shoe.id])
+                        if combo_signature in used_item_combinations: continue
+                        used_item_combinations.add(combo_signature)
+                        combinations.append(self._create_recommendation([top, shoe], weather, occasion, creativity))
+             # (Bottom + Footwear)
+            if bottoms and footwear:
+                for bottom in bottoms:
+                    for shoe in footwear:
+                        combo_signature = frozenset([bottom.id, shoe.id])
+                        if combo_signature in used_item_combinations: continue
+                        used_item_combinations.add(combo_signature)
+                        combinations.append(self._create_recommendation([bottom, shoe], weather, occasion, creativity))
 
         # Sort by overall score and return diverse top combinations
         combinations.sort(key=lambda x: x.overall_score(), reverse=True)
@@ -419,9 +417,12 @@ class SmartOutfitRecommender:
         final_combinations = []
         item_usage_count = {}
         for combo in combinations:
+            # Ensure at least two items
+            if len(combo.items) < 2:
+                continue
             can_add = True
             for item in combo.items:
-                if item_usage_count.get(item.id, 0) >= 2:
+                if item_usage_count.get(item.id, 0) >= 3: # Allow more reuse
                     can_add = False
                     break
             if can_add and len(final_combinations) < max_combinations:
@@ -430,6 +431,26 @@ class SmartOutfitRecommender:
                     item_usage_count[item.id] = item_usage_count.get(item.id, 0) + 1
 
         return final_combinations
+
+    def _create_recommendation(self, items: List[ClothingItem], weather: WeatherData, occasion: str, creativity: float) -> OutfitRecommendation:
+        """Helper to create an OutfitRecommendation object."""
+        compatibility = self.calculate_visual_compatibility(items)
+        weather_suit = self.calculate_enhanced_weather_suitability(items, weather)
+        occasion_match = self.calculate_occasion_match(items, occasion)
+        style_coherence = self.calculate_style_coherence(items)
+        color_harmony = self.calculate_color_harmony(items)
+
+        # Apply creativity bonus
+        creativity_bonus = 1.0 + (creativity * 0.3)
+        
+        return OutfitRecommendation(
+            items=items,
+            compatibility_score=min(1.0, compatibility * creativity_bonus),
+            weather_suitability=weather_suit,
+            occasion_match=min(1.0, occasion_match * creativity_bonus),
+            style_coherence=min(1.0, style_coherence * creativity_bonus),
+            color_harmony=min(1.0, color_harmony * creativity_bonus)
+        )
     
     def calculate_enhanced_weather_suitability(self, items: List[ClothingItem], weather: WeatherData) -> float:
         """Enhanced weather suitability calculation with season weighting"""
@@ -505,50 +526,48 @@ class SmartOutfitRecommender:
     
     def plan_weekly_outfits(self, weekly_plan: Dict[str, Dict], location: str, creativity: float = 0.5) -> Dict[str, List[OutfitRecommendation]]:
         """
-        Generate outfit recommendations for a weekly plan, ensuring variety.
+        Generate outfit recommendations for a weekly plan, ensuring variety and handling small wardrobes.
         """
         weekly_outfits = {}
-        used_items_this_week = set()
-
+        # Keep track of how many times each item is used to ensure variety
+        item_usage_count = {}
+        
         sorted_dates = sorted(weekly_plan.keys())
 
         for date_str in sorted_dates:
             plan_info = weekly_plan[date_str]
             try:
+                # Use provided weather or fetch new data
                 weather = plan_info.get('weather_override') or self.weather_service.get_current_weather(location)
                 occasion = plan_info['occasion']
 
-                # Temporarily filter out recently used items to encourage variety
-                original_wardrobe = self.wardrobe
-                self.wardrobe = [item for item in original_wardrobe if item.id not in used_items_this_week]
-
+                # Generate a pool of diverse outfit options
                 outfits = self.generate_outfit_combinations(
-                    weather, occasion, max_combinations=5, creativity=creativity
+                    weather, occasion, max_combinations=15, creativity=creativity
                 )
 
-                # If no outfits found with filtered wardrobe, try with the full wardrobe
-                if not outfits:
-                    self.wardrobe = original_wardrobe
-                    outfits = self.generate_outfit_combinations(
-                        weather, occasion, max_combinations=5, creativity=creativity
-                    )
-
                 if outfits:
-                    # Select the best outfit that minimizes repetition
-                    best_outfit = min(outfits, key=lambda o: len(set(i.id for i in o.items) & used_items_this_week))
+                    # Score outfits based on quality and item reuse
+                    def calculate_outfit_desirability(outfit):
+                        reuse_penalty = sum(item_usage_count.get(item.id, 0) for item in outfit.items)
+                        # The score is penalized by how many times its items have been used
+                        return outfit.overall_score() - (reuse_penalty * 0.1)
+
+                    # Sort outfits by this new desirability score
+                    outfits.sort(key=calculate_outfit_desirability, reverse=True)
+                    
+                    best_outfit = outfits[0]
                     weekly_outfits[date_str] = [best_outfit]
+
+                    # Update usage count for the items in the chosen outfit
                     for item in best_outfit.items:
-                        used_items_this_week.add(item.id)
+                        item_usage_count[item.id] = item_usage_count.get(item.id, 0) + 1
                 else:
                     weekly_outfits[date_str] = []
-
-                # Restore wardrobe for next iteration
-                self.wardrobe = original_wardrobe
 
             except Exception as e:
                 print(f"Error generating outfits for {date_str}: {e}")
                 weekly_outfits[date_str] = []
-                self.wardrobe = original_wardrobe # Ensure restoration on error
 
         return weekly_outfits
 

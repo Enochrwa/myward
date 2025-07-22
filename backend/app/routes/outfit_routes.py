@@ -333,7 +333,7 @@ def recommend_weather_occasion(request: WeatherOccasionRequest):
     recommendations = recommender.generate_outfit_combinations(
         weather=weather,
         occasion=request.occasion,
-        max_combinations=5,
+        max_combinations=10, # Increased combinations
         creativity=getattr(request, 'creativity', 0.5)
     )
 

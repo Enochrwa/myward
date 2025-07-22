@@ -5,34 +5,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { Slider } from "@/components/ui/slider"; // Import Slider
+import { Label } from "@/components/ui/label"; // Import Label
 
 const occasions = [
     "work", "formal", "leisure", "party", "sport", "outdoor", "smart_casual"
 ];
 
-
-
-// Keep your imports as is
-
 const WeatherOccasionRecommender = ({ wardrobeItems }) => {
     const [city, setCity] = useState("Kigali");
     const [occasion, setOccasion] = useState("work");
+    const [creativity, setCreativity] = useState(0.5); // Add creativity state
     const [outfits, setOutfits] = useState([]);
     const [weather, setWeather] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const recommendOutfitsByWeatherOccasion = async (city, occasion, wardrobeItems) => {
+    const recommendOutfitsByWeatherOccasion = async (city, occasion, creativity, wardrobeItems) => {
         setLoading(true);
         setError(null);
         try {
             const response = await axios.post("http://127.0.0.1:8000/api/outfit/recommend/weather-occasion", {
                 city,
                 occasion,
+                creativity, // Pass creativity to API
                 wardrobe_items: wardrobeItems
             });
             setOutfits(response.data);
-            console.log("Weather outfits: ", response?.data)
         } catch (error) {
             setError("Error fetching outfit recommendations.");
             console.error(error);
@@ -53,7 +52,7 @@ const WeatherOccasionRecommender = ({ wardrobeItems }) => {
 
     const handleRecommendationRequest = () => {
         fetchWeather(city);
-        recommendOutfitsByWeatherOccasion(city, occasion, wardrobeItems);
+        recommendOutfitsByWeatherOccasion(city, occasion, creativity, wardrobeItems);
     }
 
     useEffect(() => {
@@ -70,19 +69,20 @@ const WeatherOccasionRecommender = ({ wardrobeItems }) => {
                         <CardTitle className="text-2xl font-bold">Find Your Perfect Outfit</CardTitle>
                     </CardHeader>
                     <CardContent className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                             <div className="flex flex-col gap-2">
-                                <label className="font-semibold text-gray-700">City</label>
+                                <Label htmlFor="city" className="font-semibold text-gray-700">City</Label>
                                 <Input
+                                    id="city"
                                     placeholder="Enter a city"
                                     value={city}
                                     onChange={(e) => setCity(e.target.value)}
                                 />
                             </div>
                             <div className="flex flex-col gap-2">
-                                <label className="font-semibold text-gray-700">Occasion</label>
+                                <Label htmlFor="occasion" className="font-semibold text-gray-700">Occasion</Label>
                                 <Select onValueChange={setOccasion} defaultValue={occasion}>
-                                    <SelectTrigger>
+                                    <SelectTrigger id="occasion">
                                         <SelectValue placeholder="Select an occasion" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -96,6 +96,21 @@ const WeatherOccasionRecommender = ({ wardrobeItems }) => {
                             >
                                 Get Recommendations
                             </Button>
+                        </div>
+                        <div className="mt-4">
+                            <Label htmlFor="creativity" className="font-semibold text-gray-700">Creativity</Label>
+                            <Slider
+                                id="creativity"
+                                min={0}
+                                max={1}
+                                step={0.1}
+                                value={[creativity]}
+                                onValueChange={(value) => setCreativity(value[0])}
+                                className="mt-2"
+                            />
+                            <div className="text-xs text-gray-500 text-center mt-1">
+                                {creativity < 0.3 ? "Classic" : creativity > 0.7 ? "Adventurous" : "Balanced"}
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -137,7 +152,7 @@ const WeatherOccasionRecommender = ({ wardrobeItems }) => {
                 <div className="flex justify-center items-center h-64">
                     <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
                 </div>
-            ) : (
+            ) : outfits.length > 0 ? (
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                     initial={{ opacity: 0 }}
@@ -153,7 +168,9 @@ const WeatherOccasionRecommender = ({ wardrobeItems }) => {
                         >
                             <Card className="shadow-lg hover:shadow-xl rounded-xl">
                                 <CardHeader className="flex justify-between items-center bg-gray-100 p-4">
-                                    <CardTitle className="text-lg font-bold text-gray-800">Outfit {index + 1}</CardTitle>
+                                    <CardTitle className="text-lg font-bold text-gray-800">
+                                        {outfit.items.length < 3 ? "Partial Outfit" : `Outfit ${index + 1}`}
+                                    </CardTitle>
                                     <div className="text-sm font-semibold bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">
                                         Score: {outfit.score.toFixed(2)}
                                     </div>
@@ -173,6 +190,10 @@ const WeatherOccasionRecommender = ({ wardrobeItems }) => {
                         </motion.div>
                     ))}
                 </motion.div>
+            ) : (
+                <div className="text-center text-gray-500 mt-8">
+                    <p>No outfits could be generated. Try adjusting the filters or adding more items to your wardrobe.</p>
+                </div>
             )}
         </div>
     );
