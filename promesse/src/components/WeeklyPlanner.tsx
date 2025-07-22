@@ -13,6 +13,7 @@ import { Calendar, Loader2, Lock, Unlock, RefreshCw, Save, Trash2 } from 'lucide
 import axios from 'axios';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
+import SavedPlanCard from './SavedPlanCard';
 
 type DailyPlan = {
   occasion: string;
@@ -294,16 +295,6 @@ const WeeklyPlanner: React.FC = () => {
             />
           </CardTitle>
           <div className="flex items-center space-x-2">
-            <Select onValueChange={(planId) => handleLoadPlan(savedPlans.find(p => p.id === parseInt(planId))!)}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Load a plan" />
-              </SelectTrigger>
-              <SelectContent>
-                {savedPlans.map(plan => (
-                  <SelectItem key={plan.id} value={String(plan.id)}>{plan.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Button onClick={handleSavePlan} size="sm">
               <Save className="h-4 w-4 mr-2" />
               Save Plan
@@ -463,6 +454,12 @@ const WeeklyPlanner: React.FC = () => {
             );
           })}
         </div>
+      </CardContent>
+      <CardContent>
+        <h2 className="text-2xl font-bold text-gray-700 mb-4">Saved Plans</h2>
+        {savedPlans.map(plan => (
+          <SavedPlanCard key={plan.id} plan={plan} />
+        ))}
       </CardContent>
     </Card>
   );
