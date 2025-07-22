@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 MYSQL_CONFIG = {
     'host': 'localhost',
     'database': 'image_processing',
-    'user': 'enoch',
-    'password': 'enoch',  # Change this to your MySQL password
+    'user': 'promesse',
+    'password': 'promesse',  # Change this to your MySQL password
     'port': 3306
 }
 

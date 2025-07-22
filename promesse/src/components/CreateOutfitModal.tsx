@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { WardrobeItemResponse } from '@/lib/apiClient';
-import apiClient from '@/lib/apiClient';
+import * as apiClient from '@/lib/apiClient';
 import { OutfitCreate, SmartOutfit } from '../types/outfitTypes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,7 +32,7 @@ const CreateOutfitModal = ({ isOpen, onClose, onSave, items }: CreateOutfitModal
   const handleGenerateSmartOutfits = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.post('/outfits/generate-smart-outfits', {
+      const response = await apiClient.post('/outfit/generate-smart-outfits', {
         wardrobe_items: items,
         preferences: {
           occasion,

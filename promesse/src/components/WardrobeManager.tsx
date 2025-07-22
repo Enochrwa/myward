@@ -185,7 +185,7 @@ const WardrobeManager = () => {
 
     useEffect(() => {
         fetchItems();
-    }, [fetchItems]);
+    }, []);
 
     const handleSaveItem = async (newItemData: WardrobeItemCreate, imageFile?: File) => {
         try {

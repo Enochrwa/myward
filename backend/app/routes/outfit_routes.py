@@ -194,13 +194,6 @@ def delete_outfit(outfit_id: str, current_user: User = Depends(get_current_user)
     return {"message": "Outfit deleted successfully", "outfit_id": outfit_id}
 
 
-class SmartOutfitRequest(BaseModel):
-    wardrobe_items: List[Dict[str, Any]]
-    preferences: Dict[str, Any]
-
-
-
-
 @router.get("/user-clothes")
 def get_user_images(user = Depends(get_current_user)):
     connection = get_database_connection()
