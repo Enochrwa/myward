@@ -9,7 +9,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Calendar, Loader2, Lock, Unlock, RefreshCw } from 'lucide-react';
+import { Calendar, Loader2, Lock, Unlock, RefreshCw, Save, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
@@ -39,6 +39,19 @@ type OutfitRecommendation = {
   items: OutfitItem[];
 };
 
+type WeeklyPlan = {
+  id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+  days: {
+    date: string;
+    day_of_week: string;
+    occasion: string;
+    outfit_id: string | null;
+  }[];
+};
+
 const occasionOptions = [
   'work',
   'leisure',
@@ -64,9 +77,17 @@ const WeeklyPlanner: React.FC = () => {
   const [lockedOutfits, setLockedOutfits] = useState<Record<string, OutfitRecommendation>>(
     {}
   );
+  const [savedPlans, setSavedPlans] = useState<WeeklyPlan[]>([]);
+  const [currentPlanId, setCurrentPlanId] = useState<number | null>(null);
+  const [planName, setPlanName] = useState('My Weekly Plan');
 
   useEffect(() => {
-    // Initialize 7‑day plan from today
+    fetchSavedPlans();
+    fetchWardrobeItems();
+    initializeWeekDays();
+  }, []);
+
+  const initializeWeekDays = () => {
     const today = new Date();
     const days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(today);
@@ -78,8 +99,7 @@ const WeeklyPlanner: React.FC = () => {
       };
     });
     setWeekDays(days);
-    fetchWardrobeItems();
-  }, []);
+  };
 
   const fetchWardrobeItems = async () => {
     try {
@@ -93,6 +113,21 @@ const WeeklyPlanner: React.FC = () => {
       setWardrobeItems(resp.data || []);
     } catch (err) {
       console.error('Error fetching wardrobe items:', err);
+    }
+  };
+
+  const fetchSavedPlans = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const resp = await axios.get<WeeklyPlan[]>(
+        'http://127.0.0.1:8000/api/weekly-plan/',
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setSavedPlans(resp.data);
+    } catch (err) {
+      console.error('Error fetching saved plans:', err);
     }
   };
 
@@ -111,7 +146,6 @@ const WeeklyPlanner: React.FC = () => {
 
   const handlePlanWeek = async (singleDate?: string) => {
     setLoading(true);
-    // Build plan, skipping locked dates
     const plan: Record<string, DailyPlan> = {};
     (singleDate ? [singleDate] : weekDays.map((d) => d.date)).forEach((date) => {
       if (!lockedOutfits[date]) {
@@ -121,16 +155,19 @@ const WeeklyPlanner: React.FC = () => {
     });
 
     try {
-      const resp = await axios.post<Record<string, OutfitRecommendation[]>>(
-        'http://127.0.0.1:8000/api/outfit/weekly-plan',
+      const token = localStorage.getItem('token');
+      const resp = await axios.post(
+        'http://127.0.0.1:8000/api/weekly-plan/recommendations',
         {
           location,
           weekly_plan: plan,
           wardrobe_items: wardrobeItems,
           creativity
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
-      // Merge new into existing recommendations and weather
       const { recommendations: newRecs, weather: newWeather } = resp.data;
       setRecommendations((prev) => ({ ...prev, ...newRecs }));
       setWeather((prev) => ({ ...prev, ...newWeather }));
@@ -153,17 +190,109 @@ const WeeklyPlanner: React.FC = () => {
     });
   };
 
+  const handleSavePlan = async () => {
+    const token = localStorage.getItem('token');
+    const planData = {
+      name: planName,
+      start_date: weekDays[0].date,
+      end_date: weekDays[weekDays.length - 1].date,
+      days: weekDays.map((day) => ({
+        date: day.date,
+        day_of_week: day.day,
+        occasion: day.occasion,
+        outfit_id: lockedOutfits[day.date] ? lockedOutfits[day.date].items[0].id : null
+      }))
+    };
+
+    try {
+      if (currentPlanId) {
+        await axios.put(
+          `http://127.0.0.1:8000/api/weekly-plan/${currentPlanId}`,
+          planData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        const response = await axios.post(
+          'http://127.0.0.1:8000/api/weekly-plan/',
+          planData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setCurrentPlanId(response.data.id);
+      }
+      fetchSavedPlans();
+    } catch (error) {
+      console.error('Error saving plan:', error);
+    }
+  };
+
+  const handleDeletePlan = async () => {
+    if (!currentPlanId) return;
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`http://127.0.0.1:8000/api/weekly-plan/${currentPlanId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCurrentPlanId(null);
+      setPlanName('My Weekly Plan');
+      initializeWeekDays();
+      setRecommendations({});
+      setLockedOutfits({});
+      fetchSavedPlans();
+    } catch (error) {
+      console.error('Error deleting plan:', error);
+    }
+  };
+
+  const handleLoadPlan = (plan: WeeklyPlan) => {
+    setCurrentPlanId(plan.id);
+    setPlanName(plan.name);
+    const loadedWeekDays = plan.days.map((day) => ({
+      date: day.date,
+      day: day.day_of_week,
+      occasion: day.occasion
+    }));
+    setWeekDays(loadedWeekDays);
+    // Note: Loading recommendations and locked outfits would require more complex logic
+    // to fetch outfit details based on outfit_id. For now, we just load the plan structure.
+  };
+
   return (
     <Card className="max-w-7xl mx-auto my-8 shadow-lg">
       <CardHeader className="bg-gray-50">
-        <CardTitle className="flex items-center text-2xl font-bold text-gray-700">
-          <Calendar className="mr-3 text-indigo-500" />
-          Weekly Outfit Planner
-        </CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center text-2xl font-bold text-gray-700">
+            <Calendar className="mr-3 text-indigo-500" />
+            <Input
+              value={planName}
+              onChange={(e) => setPlanName(e.target.value)}
+              className="text-2xl font-bold"
+            />
+          </CardTitle>
+          <div className="flex items-center space-x-2">
+            <Select onValueChange={(planId) => handleLoadPlan(savedPlans.find(p => p.id === parseInt(planId))!)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Load a plan" />
+              </SelectTrigger>
+              <SelectContent>
+                {savedPlans.map(plan => (
+                  <SelectItem key={plan.id} value={String(plan.id)}>{plan.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleSavePlan} size="sm">
+              <Save className="h-4 w-4 mr-2" />
+              Save Plan
+            </Button>
+            {currentPlanId && (
+              <Button onClick={handleDeletePlan} size="sm" variant="destructive">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
       </CardHeader>
 
       <CardContent className="p-6">
-        {/* Controls */}
         <div className="flex flex-wrap gap-6 mb-8 items-end">
           <div className="flex-grow max-w-xs">
             <Label htmlFor="city">City</Label>
@@ -206,7 +335,6 @@ const WeeklyPlanner: React.FC = () => {
           </div>
         </div>
 
-        {/* Week grid */}
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
           {weekDays.map((day) => {
             const recs = recommendations[day.date] || [];
@@ -224,7 +352,6 @@ const WeeklyPlanner: React.FC = () => {
                   <h3 className="font-semibold">{day.day}</h3>
                   <p className="text-sm text-gray-500 mb-3">{day.date}</p>
 
-                  {/* Occasion selector */}
                   <Select
                     value={day.occasion}
                     onValueChange={(v) => handleOccasionChange(day.date, v)}
@@ -241,8 +368,6 @@ const WeeklyPlanner: React.FC = () => {
                     </SelectContent>
                   </Select>
 
-                  {/* Recommendation preview */}
-                  {/* Weather display */}
                   <div className="mt-4 text-sm">
                     <h4 className="font-semibold text-gray-600">Weather</h4>
                     {weather[day.date] ? (
@@ -260,7 +385,6 @@ const WeeklyPlanner: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Recommendation preview */}
                   <div className="mt-4">
                     <h4 className="font-semibold mb-2 text-gray-700">
                       Recommended:
@@ -288,7 +412,6 @@ const WeeklyPlanner: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Lock & refresh */}
                 <div className="flex items-center justify-between mt-4">
                   <Button
                     size="sm"

@@ -20,7 +20,8 @@ from app.routes import (
     admin,
     recommendation_routes,
     classifier,
-    upload_routes
+    upload_routes,
+    weekly_plan_routes
 )
 
 # Configure logging
@@ -101,6 +102,7 @@ app.include_router(admin.router, prefix="/api")
 app.include_router(classifier.router, prefix="/api")
 app.include_router(recommendation_routes.router, prefix="/api")
 app.include_router(upload_routes.router, prefix="/api")
+app.include_router(weekly_plan_routes.router, prefix="/api")
 
 
 @app.get("/")

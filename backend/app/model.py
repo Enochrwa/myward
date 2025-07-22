@@ -241,9 +241,10 @@ class WeeklyPlanDayOutfit(Base):
     id = Column(Integer, primary_key=True, index=True)
     weekly_plan_id = Column(Integer, ForeignKey("weekly_plans.id"), nullable=False)
     day_of_week = Column(String(10), nullable=False)
-    date = Column(Date, nullable=True)  # Specific date for the outfit
+    date = Column(Date, nullable=True)
+    occasion = Column(String(100), nullable=True)
     outfit_id = Column(Integer, ForeignKey("outfits.id"), nullable=True)
-    weather_forecast = Column(JSON, nullable=True)  # Weather data for the day
+    weather_forecast = Column(JSON, nullable=True)
     notes = Column(Text, nullable=True)
 
     weekly_plan = relationship("WeeklyPlan", back_populates="daily_outfits")
