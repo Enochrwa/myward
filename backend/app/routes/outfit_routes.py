@@ -12,7 +12,7 @@ from ..db.database import get_database_connection
 from ..utils.constants import CATEGORY_PART_MAPPING, CLOTHING_PARTS, OUTFIT_RULES
 from ..utils.cluster import main as run_clustering
 from ..services.outfit_creation_service import SmartOutfitCreator
-from ..services.occasion_weather_outfits import WeatherService, WeatherOccasionRequest, SmartOutfitRecommender  # Assuming you have this or define it similarly to your example
+from ..services.occasion_weather_outfits import WeatherService, WeatherOccasionRequest, WeatherData,SmartOutfitRecommender  # Assuming you have this or define it similarly to your example
 import os
 
 router = APIRouter(prefix="/outfit")
@@ -370,45 +370,64 @@ class WeeklyPlanRequest(BaseModel):
 def plan_weekly_outfits_route(request: WeeklyPlanRequest):
     api_key = os.getenv("OPENWEATHERMAP_API_KEY")
     if not api_key:
-        raise HTTPException(status_code=500, detail="Weather API key not configured.")
+        raise HTTPException(500, "Weather API key not configured.")
 
     weather_service = WeatherService(api_key)
     recommender = SmartOutfitRecommender(weather_service)
     recommender.load_wardrobe(request.wardrobe_items)
 
-    weekly_outfits = recommender.plan_weekly_outfits(
-        weekly_plan=request.weekly_plan,
-        location=request.location,
-        creativity=request.creativity
-    )
+    # Instead of get_daily_forecast(lat, lon), call:
+    daily_forecasts = weather_service.get_daily_forecast(request.location, None)
 
-    # Format response
+    # Build a forecast dict for quick lookup
+    forecast_map = {d["date"]: d for d in daily_forecasts}
+
+    # Inject weather_override into weekly_plan items if missing
+    for date_str, plan in request.weekly_plan.items():
+        if "weather_override" not in plan:
+            plan["weather_override"] = forecast_map.get(date_str)
+
     response_data = {"recommendations": {}, "weather": {}}
-    for date, outfits in weekly_outfits.items():
-        # Get weather for the date
-        weather = weather_service.get_weather_for_date(request.location, date)
-        if weather:
-            response_data["weather"][date] = {
-                "temp_min": weather.temperature,  # Assuming temp is daily avg
-                "temp_max": weather.temperature,
-                "weather": weather.weather_condition,
-                "description": weather.description,
-            }
+    for date_str, plan_info in request.weekly_plan.items():
+        weather_override = plan_info.get("weather_override")
+        if weather_override:
+            weather = WeatherData(
+                temperature=(weather_override["temp_min"] + weather_override["temp_max"]) / 2,
+                feels_like=(weather_override["temp_min"] + weather_override["temp_max"]) / 2,
+                humidity=0,
+                pressure=0,
+                visibility=0,
+                wind_speed=0,
+                weather_condition=weather_override["weather"],
+                description=weather_override["description"],
+                cloud_coverage=0,
+                sunrise=0,
+                sunset=0,
+            )
+            response_data["weather"][date_str] = weather_override
+        else:
+            weather = None
 
-        response_data["recommendations"][date] = [
-            {
-                "score": outfit.overall_score(),
-                "items": [
-                    {
-                        "id": item.id,
-                        "category": item.category,
-                        "image_url": build_image_url(item.filename),
-                    }
-                    for item in outfit.items
-                ],
-            }
-            for outfit in outfits
-        ]
+        if weather:
+            outfits = recommender.generate_outfit_combinations(
+                weather, plan_info['occasion'], max_combinations=1, creativity=request.creativity
+            )
+            response_data["recommendations"][date_str] = [
+                {
+                    "score": outfit.overall_score(),
+                    "items": [
+                        {
+                            "id": item.id,
+                            "category": item.category,
+                            "image_url": build_image_url(item.filename),
+                        }
+                        for item in outfit.items
+                    ],
+                }
+                for outfit in outfits
+            ]
+        else:
+            response_data["recommendations"][date_str] = []
 
     return response_data
 

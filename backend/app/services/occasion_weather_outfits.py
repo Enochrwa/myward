@@ -67,13 +67,10 @@ class WeatherData:
 
     
 class WeatherService:
-    """Service to fetch weather data from OpenWeatherMap API"""
-
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.geo_url = "http://api.openweathermap.org/geo/1.0/direct"
-        # Use v2.5 One Call (free tier)
-        self.forecast_url = "https://api.openweathermap.org/data/2.5/onecall"
+        self.forecast_url = "https://api.openweathermap.org/data/2.5/forecast"
         self.base_url = "http://api.openweathermap.org/data/2.5/weather"
 
 
@@ -107,63 +104,47 @@ class WeatherService:
         except requests.RequestException as e:
             raise Exception(f"Failed to fetch weather data: {e}")
 
+    def get_coordinates(self, city: str, country_code: Optional[str] = None) -> Tuple[float, float]:
+        loc = f"{city},{country_code}" if country_code else city
+        resp = requests.get(self.geo_url, params={
+            "q": loc,
+            "limit": 1,
+            "appid": self.api_key
+        })
+        resp.raise_for_status()
+        data = resp.json()
+        if not data:
+            raise Exception(f"No geocode result for {loc}")
+        return data[0]["lat"], data[0]["lon"]
 
-    def get_coordinates(self, city: str) -> Optional[Tuple[float, float]]:
-        """Get latitude and longitude for a city."""
-        params = {'q': city, 'limit': 1, 'appid': self.api_key}
-        try:
-            resp = requests.get(self.geo_url, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-            if data:
-                return data[0]['lat'], data[0]['lon']
-        except requests.RequestException as e:
-            print(f"Error fetching coordinates: {e}")
-        return None
-
-    def get_daily_forecast(self, lat: float, lon: float) -> List[Dict]:
-        """Fetch 7-day daily forecast."""
-        params = {
+    def get_daily_forecast(self, city: str, country_code: Optional[str] = None) -> List[Dict]:
+        lat, lon = self.get_coordinates(city, country_code)
+        resp = requests.get(self.forecast_url, params={
             "lat": lat,
             "lon": lon,
-            "exclude": "current,minutely,hourly,alerts",
             "units": "metric",
             "appid": self.api_key
-        }
-        try:
-            resp = requests.get(self.forecast_url, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-            return data.get("daily", [])
-        except requests.RequestException as e:
-            raise Exception(f"Failed to fetch forecast: {e}")
-
-    def get_weather_for_date(self, city: str, target_date: str) -> Optional[WeatherData]:
-        """Get weather for a specific date from the forecast."""
-        coords = self.get_coordinates(city)
-        if not coords:
-            return None
-        
-        forecast = self.get_daily_forecast(coords[0], coords[1])
-        target_dt = datetime.strptime(target_date, "%Y-%m-%d").date()
-
-        for day in forecast:
-            forecast_date = datetime.utcfromtimestamp(day["dt"]).date()
-            if forecast_date == target_dt:
-                return WeatherData(
-                    temperature=day["temp"]["day"],
-                    feels_like=day["feels_like"]["day"],
-                    humidity=day["humidity"],
-                    pressure=day["pressure"],
-                    visibility=day.get("visibility", 10000),
-                    wind_speed=day["wind_speed"],
-                    weather_condition=day["weather"][0]["main"],
-                    description=day["weather"][0]["description"],
-                    cloud_coverage=day["clouds"],
-                    sunrise=day["sunrise"],
-                    sunset=day["sunset"]
-                )
-        return None
+        })
+        resp.raise_for_status()
+        data = resp.json()
+        # data["list"] is a list of 3‑hour forecasts; group them by date:
+        by_date = {}
+        for entry in data["list"]:
+            date_str = entry["dt_txt"].split(" ")[0]
+            # pick the 12:00:00 forecast if possible, else first of the day
+            if date_str not in by_date or entry["dt_txt"].endswith("12:00:00"):
+                by_date[date_str] = entry
+        # return daily entries
+        return [
+            {
+                "date": date,
+                "temp_min": e["main"]["temp_min"],
+                "temp_max": e["main"]["temp_max"],
+                "weather": e["weather"][0]["main"],
+                "description": e["weather"][0]["description"]
+            }
+            for date, e in sorted(by_date.items())
+        ]
 
 
 @dataclass
@@ -586,75 +567,6 @@ class SmartOutfitRecommender:
         
         return total_score / len(items)
     
-    def plan_weekly_outfits(self, weekly_plan: Dict[str, Dict], location: str, creativity: float = 0.5) -> Dict[str, List[OutfitRecommendation]]:
-        """
-        Generate outfit recommendations for a weekly plan using daily forecasts.
-        """
-        weekly_outfits = {}
-        item_usage_count = {}
-        
-        # Fetch forecast for the location once
-        coords = self.weather_service.get_coordinates(location)
-        if not coords:
-            print(f"Could not get coordinates for {location}")
-            return {date: [] for date in weekly_plan}
-
-        daily_forecasts = self.weather_service.get_daily_forecast(coords[0], coords[1])
-        
-        # Create a lookup for weather by date
-        weather_map = {
-            datetime.utcfromtimestamp(day["dt"]).strftime("%Y-%m-%d"): day
-            for day in daily_forecasts
-        }
-
-        for date_str, plan_info in weekly_plan.items():
-            try:
-                weather_data = weather_map.get(date_str)
-                if not weather_data:
-                    print(f"No weather forecast available for {date_str}")
-                    weekly_outfits[date_str] = []
-                    continue
-
-                weather = WeatherData(
-                    temperature=weather_data["temp"]["day"],
-                    feels_like=weather_data["feels_like"]["day"],
-                    humidity=weather_data["humidity"],
-                    pressure=weather_data["pressure"],
-                    visibility=weather_data.get("visibility", 10000),
-                    wind_speed=weather_data["wind_speed"],
-                    weather_condition=weather_data["weather"][0]["main"],
-                    description=weather_data["weather"][0]["description"],
-                    cloud_coverage=weather_data["clouds"],
-                    sunrise=weather_data["sunrise"],
-                    sunset=weather_data["sunset"]
-                )
-                
-                occasion = plan_info['occasion']
-
-                outfits = self.generate_outfit_combinations(
-                    weather, occasion, max_combinations=15, creativity=creativity
-                )
-
-                if outfits:
-                    def calculate_outfit_desirability(outfit):
-                        reuse_penalty = sum(item_usage_count.get(item.id, 0) for item in outfit.items)
-                        return outfit.overall_score() - (reuse_penalty * 0.1)
-
-                    outfits.sort(key=calculate_outfit_desirability, reverse=True)
-                    
-                    best_outfit = outfits[0]
-                    weekly_outfits[date_str] = [best_outfit]
-
-                    for item in best_outfit.items:
-                        item_usage_count[item.id] = item_usage_count.get(item.id, 0) + 1
-                else:
-                    weekly_outfits[date_str] = []
-
-            except Exception as e:
-                print(f"Error generating outfits for {date_str}: {e}")
-                weekly_outfits[date_str] = []
-
-        return weekly_outfits
 
 # Example usage and testing
 def example_usage():
