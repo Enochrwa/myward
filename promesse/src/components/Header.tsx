@@ -17,6 +17,32 @@ import {
 import { cn } from "@/lib/utils";
 import { Description } from '@radix-ui/react-dialog';
 
+const ListItem = React.forwardRef<
+  React.ElementRef<"a">,
+  React.ComponentPropsWithoutRef<"a">
+>(({ className, title, children, ...props }, ref) => {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <a
+          ref={ref}
+          className={cn(
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            className
+          )}
+          {...props}
+        >
+          <div className="text-sm font-medium leading-none">{title}</div>
+          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+            {children}
+          </p>
+        </a>
+      </NavigationMenuLink>
+    </li>
+  )
+})
+ListItem.displayName = "ListItem"
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -103,36 +129,32 @@ const Header = () => {
                           {item.name}
                         </NavigationMenuTrigger>
                         <NavigationMenuContent>
-                          <div className="w-[420px] p-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border border-white/50 dark:border-gray-700/50">
-                            <div className="mb-4">
-                              <h4 className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                Digital Wardrobe
-                              </h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Your personal fashion assistant
-                              </p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              {wardrobeFeatures.map((feature) => (
-                                <NavigationMenuLink key={feature.name} asChild>
-                                  <Link
-                                    to={feature.href}
-                                    className="block p-3 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 transition-all duration-200 group"
-                                  >
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <feature.icon size={14} className="text-purple-600 dark:text-purple-400" />
-                                      <div className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-purple-700 dark:group-hover:text-purple-300">
-                                        {feature.name}
-                                      </div>
-                                    </div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                      {feature.description}
-                                    </div>
-                                  </Link>
-                                </NavigationMenuLink>
-                              ))}
-                            </div>
-                          </div>
+                          <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+                            <li className="row-span-3">
+                              <NavigationMenuLink asChild>
+                                <a
+                                  className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
+                                  href="/"
+                                >
+                                  <div className="mb-2 mt-4 text-lg font-medium">
+                                    Promesse
+                                  </div>
+                                  <p className="text-sm leading-tight text-muted-foreground">
+                                    Your smart wardrobe assistant.
+                                  </p>
+                                </a>
+                              </NavigationMenuLink>
+                            </li>
+                            {wardrobeFeatures.map((feature) => (
+                              <ListItem
+                                key={feature.name}
+                                title={feature.name}
+                                href={feature.href}
+                              >
+                                {feature.description}
+                              </ListItem>
+                            ))}
+                          </ul>
                         </NavigationMenuContent>
                       </NavigationMenuItem>
                     );
@@ -238,26 +260,24 @@ const Header = () => {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-4 animate-fade-in mobile-menu">
-            <nav className="space-y-2">
-              {/* Add Login/Register to mobile menu if not logged in? For now, focus on desktop */}
+            <nav className="flex flex-col space-y-2">
               {navigation.map((item) => {
                 const Icon = item.icon;
-                const isActive = location.pathname === item.href || 
-                  (item.href === '/ai-studio' && location.pathname.startsWith('/ai-studio'));
+                const isActive = location.pathname === item.href;
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
                     className={cn(
-                      "flex items-center px-4 py-3 rounded-xl transition-all duration-200",
+                      "flex items-center px-4 py-3 rounded-xl text-base font-medium transition-all duration-200",
                       isActive
-                        ? "bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40 text-purple-700 dark:text-purple-300"
-                        : "text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-800 dark:hover:to-gray-700"
+                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
                     )}
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <Icon size={20} className="mr-3" />
-                    {item.name}
+                    <Icon size={20} className="mr-4" />
+                    <span>{item.name}</span>
                   </Link>
                 );
               })}

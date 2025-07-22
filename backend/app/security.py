@@ -66,8 +66,8 @@ async def get_current_user(
     )
 
     token_data = decode_access_token(token)
-    print(f"Received Token: {token}")
-    print("TOken data: ", token_data)
+    # print(f"Received Token: {token}")
+    # print("TOken data: ", token_data)
     if token_data is None or token_data.username is None:
         raise credentials_exception
 

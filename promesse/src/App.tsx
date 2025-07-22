@@ -41,9 +41,6 @@ function App() {
   }
 
 
-    // API returns direct array of items
-
-
 
     useEffect(() => {
       (async () => {
@@ -62,36 +59,8 @@ function App() {
         }
       })();
     }, []);
-
-
-    const getAuthToken = () => localStorage.getItem("token");
-    const token = getAuthToken();
-
-
-    console.log("Token:", token); // inside apiClient
-
-
-
   
-    // const fetchImages = async () => {
-      
-    //   try {
-    //     const response = await apiClient('/images/?limit=50');
-      
-    //     setItems(response?.data?.images || []);
-    //     console.log("occasion: ", response?.data)
-    //   } catch (error) {
-    //     console.error('Error fetching images:', error);
-    //   } finally {
-    //     console.log("Fetching ready")
-    //   }
-    // };
   
-    // useEffect(() => {
-    //   fetchImages();
-    // }, []);
-
- 
 
   return (
     <ThemeProvider>

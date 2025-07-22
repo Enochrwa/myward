@@ -41,7 +41,7 @@ const ClotheAnalytics: React.FC = () => {
             },
           });
       setImages(allItems?.data?.images);
-      console.log("Fetched Images: ", allItems?.data)
+
     } catch (error) {
       console.error('Error fetching images:', error);
     } finally {

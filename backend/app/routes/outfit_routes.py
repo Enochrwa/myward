@@ -218,6 +218,23 @@ def get_user_images(user = Depends(get_current_user)):
         item['image_url'] = build_image_url(item['filename'])
     return images
 
+@router.get("/user-clothes/{user_id}")
+def get_user_clothes_by_id(user_id: int, current_user: User = Depends(get_current_user)):
+    if not current_user.role == "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    connection = get_database_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    query = "SELECT * FROM images WHERE user_id = %s"
+    cursor.execute(query, (user_id,))
+    
+    images = cursor.fetchall()
+    for item in images:
+        item['image_url'] = build_image_url(item['filename'])
+    
+    return images
+
 @router.get("/user-items")
 def get_user_images(user = Depends(get_current_user)):
     connection = get_database_connection()
@@ -230,6 +247,21 @@ def get_user_images(user = Depends(get_current_user)):
         item['image_url'] = build_image_url(item['filename'])
     return images
 
+@router.get("/user-clothes-admin/{user_id}/")  # <== Fix route
+def get_user_images(user_id: str):
+    try:
+        connection = get_database_connection()
+        cursor = connection.cursor(dictionary=True)
+        query = "SELECT * FROM images WHERE user_id = %s"
+        cursor.execute(query, (user_id,))
+        images = cursor.fetchall()
+        
+        for item in images:
+            item['image_url'] = build_image_url(item['filename'])
+
+        return {"status": "success", "data": images}  # <== Proper return
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{outfit_id}/toggle-favorite")

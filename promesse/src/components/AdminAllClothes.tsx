@@ -1,124 +1,95 @@
-import React, { useState, useEffect } from 'react';
-import apiClient from '@/lib/apiClient';
+// src/components/AdminAllClothes.tsx
+import React, { useEffect, useState } from 'react';
+import { getAllUsers, getClothesByUserId } from '@/lib/admin';
+import { User } from '@/types/userTypes';
+import { Clothe } from '@/types/clotheTypes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import axios from 'axios';
-interface Clothe {
-  id: string;
-  filename: string;
-  image_url: string;
-  category: string;
-  user_id: string;
-  dominant_color: string;
-}
+import { Image } from 'lucide-react';
 
 const AdminAllClothes = () => {
-  const [clothes, setClothes] = useState<Clothe[]>([]);
+  const [userClothes, setUserClothes] = useState<
+    { user: User; clothes: Clothe[] }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchClothes = async () => {
+    const fetchData = async () => {
       try {
-        setLoading(true);
-        const response = await apiClient('/outfit/user-clothes');
-        setClothes(response);
+        const users = await getAllUsers();
+        const data: { user: User; clothes: Clothe[] }[] = [];
 
-        // const token = localStorage.getItem("token");
-        // const allItems = await axios.get("http://127.0.0.1:8000/api/outfit/user-clothes", {
-        //       headers: {
-        //       Authorization: `Bearer ${token}`,
-        //       },
-        //   });
+        for (const user of users) {
+          const clothes = await getClothesByUserId(user.id.toString());
+          if (clothes) {
+            data.push({ user, clothes });
+          }
+        }
 
-        //   console.log('Response: ', response)
-
-        // console.log("Wardrobe Items: ", allItems?.data?.images)
+        setUserClothes(data);
         setError(null);
       } catch (err: any) {
-        setError(err.message || 'Failed to fetch clothes');
+        console.error(err);
+        setError('Failed to load clothes data.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchClothes();
+    fetchData();
   }, []);
 
-  const users = Array.from(new Set(clothes.map((clothe) => clothe.user_id)));
-
-  const filteredClothes = clothes
-    .filter((clothe) =>
-      clothe.category.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter((clothe) => !selectedUser || clothe.user_id === selectedUser);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
-  }
+  if (loading) return <div className="text-center py-10">Loading clothes...</div>;
+  if (error) return <div className="text-red-500 text-center py-10">{error}</div>;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>All Users' Clothes</CardTitle>
-        <div className="flex space-x-4">
-          <Input
-            placeholder="Search by category..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
-          {
-            users?.length > 0 &&
-            <Select onValueChange={(val) => setSelectedUser(val === 'all' ? null : val)} value={selectedUser ?? 'all'}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by user" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Users</SelectItem>
-              {users.map((user) => (
-                <SelectItem key={user} value={user}>
-                  {user}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          }
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {filteredClothes.map((clothe) => (
-            <div key={clothe.id} className="border rounded-lg p-2">
-              <img
-                src={clothe.image_url}
-                alt={clothe.filename}
-                className="w-full h-48 object-cover rounded-md"
-              />
-              <div className="mt-2">
-                <p className="text-sm font-semibold">{clothe.category}</p>
-                <p className="text-xs text-gray-500">User: {clothe.user_id}</p>
-                <div className="flex items-center mt-1">
+    <div className="space-y-8">
+      {userClothes.map(({ user, clothes }) => (
+        <Card key={user.id} className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold">
+              {user.username}'s Clothes ({clothes.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {clothes.length === 0 ? (
+              <p className="text-gray-500">No clothes uploaded.</p>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {clothes.map((clothe) => (
                   <div
-                    className="w-4 h-4 rounded-full mr-2"
-                    style={{ backgroundColor: clothe.dominant_color }}
-                  />
-                  <p className="text-xs">{clothe.dominant_color}</p>
-                </div>
+                    key={clothe.id}
+                    className="border rounded-lg p-2 bg-white dark:bg-gray-900 shadow-md"
+                  >
+                    <img
+                      src={clothe.image_url}
+                      alt={clothe.original_name || clothe.filename}
+                      className="w-full h-40 object-cover rounded-md mb-2"
+                    />
+                    <div className="text-sm text-gray-700 dark:text-gray-200 space-y-1">
+                      <p>
+                        <span className="font-semibold">Category:</span>{' '}
+                        {clothe.category}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Style:</span> {clothe.style}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Occasion:</span>{' '}
+                        {clothe.occasion?.replace(/["']/g, '')}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Gender:</span> {clothe.gender}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 };
 

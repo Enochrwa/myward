@@ -118,24 +118,59 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFileChange(files);
+    }
+  };
+
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const fileList = Array.from(files);
-      setSelectedFiles(fileList);
-      setMetadata(fileList.map(() => ({
-        style: '',
-        occasion: [],
-        season: [],
-        temperature_range: { min: 0, max: 30 },
-        gender: '',
-        material: '',
-        pattern: ''
-      })));
-      setActiveImageIndex(0);
-      setIsModalOpen(true);
+      handleFileChange(files);
     }
   };
+
+  const handleFileChange = (files: FileList) => {
+    const fileList = Array.from(files);
+    setSelectedFiles(fileList);
+    setMetadata(fileList.map(() => ({
+      style: '',
+      occasion: [],
+      season: [],
+      temperature_range: { min: 0, max: 30 },
+      gender: '',
+      material: '',
+      pattern: ''
+    })));
+    setActiveImageIndex(0);
+    setIsModalOpen(true);
+  }
 
   const handleMetadataChange = (index: number, field: keyof ImageMetadata, value: any) => {
     const newMetadata = [...metadata];
@@ -232,9 +267,13 @@ const Dashboard = () => {
         {/* Upload and Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-8">
           {/* Upload Area */}
-          <Card 
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-white hover:border-blue-400 transition-colors cursor-pointer"
+          <Card
+            className={`border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-white hover:border-blue-400 transition-colors cursor-pointer ${isDragActive ? 'border-blue-500 bg-blue-50' : ''}`}
             onClick={() => !uploading && fileInputRef.current?.click()}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
           >
             {uploading ? (
               <div className="space-y-4">
@@ -321,8 +360,10 @@ const Dashboard = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button size="lg" variant="secondary" className="bg-white text-purple-600 hover:bg-gray-100">
-                    <Sparkles size={20} className="mr-2" />
-                    Create Outfit
+                    <Link to={"/wardrobe?action=create-outfit"} className="flex items-center">
+                      <Sparkles size={20} className="mr-2" />
+                      Create Outfit
+                    </Link>
                   </Button>
                   <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" asChild>
                     <Link to="/wardrobe">

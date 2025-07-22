@@ -75,8 +75,7 @@ const CategorizedWardrobe = () => {
                 // API returns direct array of items
                 const allItems: ApiResponse = await apiClient.getAllClothes(new URLSearchParams());
                 const categorizedItems: Record<string, ImageItem[]> = {};
-                
-                console.log("All Items: ", allItems);
+            
                 
                 for (const item of allItems?.images) {
                     const category = item.category || 'Uncategorized';

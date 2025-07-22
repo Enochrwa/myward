@@ -4,8 +4,7 @@ import { Users, Settings, Shirt, BarChart2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AdminUserManagement from './AdminUserManagement';
 import AdminAllClothes from './AdminAllClothes';
-
-import { getAllUsers } from '@/lib/admin';
+import AdminAnalytics from './AdminAnalytics';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('users');
@@ -16,9 +15,6 @@ const AdminDashboard = () => {
     { id: 'analytics', label: 'Analytics', icon: BarChart2 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
-
-
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-black p-8">
@@ -57,18 +53,7 @@ const AdminDashboard = () => {
         <main className="animate-fade-in">
           {activeTab === 'users' && <AdminUserManagement />}
           {activeTab === 'clothes' && <AdminAllClothes />}
-          {activeTab === 'analytics' && (
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-2xl font-bold">Platform Analytics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Detailed platform analytics and reports will be displayed here.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          {activeTab === 'analytics' && <AdminAnalytics />}
           {activeTab === 'settings' && (
             <Card className="shadow-lg">
               <CardHeader>
