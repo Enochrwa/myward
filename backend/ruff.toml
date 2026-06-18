@@ -1,0 +1,15 @@
+# Standalone ruff config (mirrors pyproject.toml for IDE tools that read this file)
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "S", "ANN", "RUF"]
+ignore = ["ANN101", "ANN102", "S101", "B008"]
+
+[lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "ANN", "S106"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
