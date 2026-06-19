@@ -1,21 +1,45 @@
-# Dockerfile
-FROM python:3.11.9-slim
+# ── Builder stage ─────────────────────────────────────────────────────────────
+FROM python:3.11-slim AS builder
 
-# Set working directory
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev libgl1-mesa-glx libglib2.0-0 \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml .
+RUN pip install --upgrade pip && pip wheel --no-cache-dir --wheel-dir /wheels .
+
+# ── Runtime stage ─────────────────────────────────────────────────────────────
+FROM python:3.11-slim AS runtime
+
+RUN addgroup --system app && adduser --system --ingroup app app
+
 WORKDIR /app
 
-# Copy only requirements first (for better layer caching)
-COPY requirements.txt .
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 libgl1-mesa-glx libglib2.0-0 \
+  && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip and install dependencies
-RUN pip install --upgrade pip setuptools wheel \
-    && pip install -r requirements.txt
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir --no-index --find-links=/wheels myward-backend \
+  && rm -rf /wheels
 
-# Copy the rest of your code
-COPY . .
+COPY src/ ./src/
+COPY alembic/ ./alembic/
+COPY alembic.ini .
 
-# Expose whatever port your FastAPI app listens on
+RUN mkdir -p uploads static && chown -R app:app /app
+
+USER app
+
+ENV PYTHONPATH=/app/src \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 EXPOSE 8000
 
-# Command to run your app
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD python -c "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"
+
+CMD ["uvicorn", "myward.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
